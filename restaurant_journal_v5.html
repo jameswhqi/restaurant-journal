@@ -1,0 +1,346 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font-sans);}
+.app{padding:16px;max-width:860px;margin:0 auto;}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.header h1{font-size:18px;font-weight:500;color:var(--color-text-primary);}
+.add-btn{background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;}
+.search-row{margin-bottom:10px;}
+.search-row input{width:100%;padding:8px 12px;border:0.5px solid var(--color-border-tertiary);border-radius:8px;font-size:14px;background:var(--color-background-primary);color:var(--color-text-primary);}
+.filter-row{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px;}
+.chip{padding:5px 14px;border-radius:20px;font-size:12px;border:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary);color:var(--color-text-secondary);cursor:pointer;white-space:nowrap;}
+.chip.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+.restaurant-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:12px;overflow:hidden;}
+.restaurant-card.fav{border:1.5px solid #c0392b;}
+.restaurant-header{padding:12px 14px 10px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.rest-name{font-size:15px;font-weight:500;color:var(--color-text-primary);}
+.rest-sub{font-size:12px;color:var(--color-text-secondary);margin-top:2px;}
+.rest-ratings{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+.rating-line{font-size:11px;color:var(--color-text-secondary);white-space:nowrap;}
+.dish-list{padding:6px 14px 10px;}
+.dish-row{padding:6px 0;border-bottom:0.5px solid var(--color-border-tertiary);}
+.dish-row:last-child{border-bottom:none;}
+.dish-main{display:flex;align-items:center;justify-content:space-between;}
+.dish-name{font-size:13px;color:var(--color-text-primary);flex:1;}
+.dish-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.dish-price{font-size:12px;color:var(--color-text-secondary);}
+.dish-note{font-size:11px;color:var(--color-text-secondary);margin-top:2px;}
+.card-footer{border-top:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);}
+.footer-row{padding:7px 14px;font-size:12px;color:var(--color-text-secondary);display:flex;gap:6px;align-items:flex-start;border-bottom:0.5px solid var(--color-border-tertiary);}
+.footer-row:last-child{border-bottom:none;}
+.footer-label{color:var(--color-text-tertiary);flex-shrink:0;}
+
+/* Modal — 不用 fixed，改用普通流内覆盖层 */
+.modal-overlay{display:none;position:absolute;top:0;left:0;right:0;bottom:0;min-height:100%;background:rgba(0,0,0,0.3);z-index:50;align-items:flex-start;justify-content:center;padding:24px 16px;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:14px;padding:24px;width:100%;max-width:680px;max-height:none;overflow-y:visible;position:relative;z-index:51;}
+
+.modal-title{font-size:16px;font-weight:500;margin-bottom:18px;color:#1a1a1a;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;}
+.form-full{grid-column:1/-1;}
+.form-label{font-size:12px;color:#666;margin-bottom:4px;margin-top:14px;display:block;}
+.form-input{width:100%;padding:9px 12px;border:1px solid #d0d0d0;border-radius:8px;font-size:14px;background:#fff;color:#1a1a1a;}
+.form-select{width:100%;padding:9px 12px;border:1px solid #d0d0d0;border-radius:8px;font-size:14px;background:#fff;color:#1a1a1a;}
+.input-with-new{display:flex;gap:6px;}
+.input-with-new select{flex:1;}
+.new-toggle{padding:9px 12px;border:1px solid #d0d0d0;border-radius:8px;font-size:13px;cursor:pointer;background:#fff;color:#666;white-space:nowrap;}
+
+.seg{display:flex;border:1px solid #d0d0d0;border-radius:8px;overflow:hidden;margin-top:4px;}
+.seg-opt{flex:1;padding:9px 4px;font-size:13px;text-align:center;cursor:pointer;border:none;border-right:1px solid #d0d0d0;background:#fff;color:#666;}
+.seg-opt:last-child{border-right:none;}
+.seg-opt.sel{background:#1a1a1a;color:#fff;font-weight:500;}
+
+.chop-picker{display:flex;gap:6px;margin-top:4px;}
+.chop-opt{padding:8px 14px;border:1px solid #d0d0d0;border-radius:8px;font-size:13px;cursor:pointer;color:#666;background:#fff;}
+.chop-opt.sel{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+
+.fav-toggle{display:flex;gap:8px;margin-top:4px;}
+.fav-btn{flex:1;padding:9px;border:1px solid #d0d0d0;border-radius:8px;font-size:13px;cursor:pointer;text-align:center;background:#fff;color:#666;}
+.fav-btn.sel-yes{border-color:#c0392b;background:#fdecea;color:#c0392b;font-weight:500;}
+.fav-btn.sel-no{border-color:#d0d0d0;background:#f5f5f5;color:#999;}
+
+.dish-section-label{font-size:13px;font-weight:500;color:#1a1a1a;margin-top:20px;margin-bottom:6px;}
+.dish-entry{background:#f7f7f7;border-radius:8px;padding:12px;margin-top:8px;display:grid;grid-template-columns:2fr 1fr;gap:8px;}
+.dish-entry-full{grid-column:1/-1;}
+.dish-chop-row{display:flex;gap:5px;flex-wrap:wrap;}
+.dish-chop-opt{padding:6px 10px;border:1px solid #d0d0d0;border-radius:8px;font-size:12px;cursor:pointer;color:#666;background:#fff;}
+.dish-chop-opt.sel{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+.dish-type-row{display:flex;gap:6px;grid-column:1/-1;}
+.dtype-btn{padding:6px 12px;border:1px solid #d0d0d0;border-radius:8px;font-size:12px;cursor:pointer;background:#fff;color:#666;}
+.dtype-btn.sel{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+
+.btn-row{display:flex;gap:8px;margin-top:20px;}
+.btn-primary{flex:1;padding:12px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:500;}
+.btn-cancel{padding:12px 16px;background:none;border:1px solid #d0d0d0;border-radius:8px;font-size:14px;cursor:pointer;color:#666;}
+.add-dish-btn{width:100%;padding:9px;border:1px dashed #d0d0d0;border-radius:8px;background:none;font-size:13px;color:#888;cursor:pointer;margin-top:8px;}
+.empty{text-align:center;padding:56px 20px;color:var(--color-text-secondary);font-size:14px;line-height:1.8;}
+</style>
+
+<div style="position:relative;">
+  <div class="app" id="mainApp">
+    <h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">美食日记</h2>
+    <div class="header">
+      <h1>美食日记</h1>
+      <button class="add-btn" onclick="openModal()">+ 添加餐厅</button>
+    </div>
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="搜索餐厅或菜品..." oninput="render()">
+    </div>
+    <div class="filter-row" id="cityChips"></div>
+    <div class="cards-grid" id="listArea"></div>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay" onclick="closeIfBg(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-title">添加餐厅记录</div>
+      <div class="form-grid">
+        <div>
+          <label class="form-label">城市</label>
+          <div class="input-with-new">
+            <select class="form-select" id="fCity"></select>
+            <button class="new-toggle" onclick="toggleNew('fCityNew')">+ 新</button>
+          </div>
+          <input class="form-input" id="fCityNew" placeholder="输入城市名" style="display:none;margin-top:6px">
+        </div>
+        <div>
+          <label class="form-label">餐厅名称</label>
+          <input class="form-input" id="fName" placeholder="如：Takumi">
+        </div>
+        <div>
+          <label class="form-label">菜系</label>
+          <div class="input-with-new">
+            <select class="form-select" id="fCuisine"></select>
+            <button class="new-toggle" onclick="toggleNew('fCuisineNew')">+ 新</button>
+          </div>
+          <input class="form-input" id="fCuisineNew" placeholder="输入菜系" style="display:none;margin-top:6px">
+        </div>
+        <div>
+          <label class="form-label">用餐方式</label>
+          <div class="seg" id="dineTypeSeg">
+            <button class="seg-opt sel" onclick="selectSeg(0,'dine')">Dine In</button>
+            <button class="seg-opt" onclick="selectSeg(1,'take')">Take Out</button>
+            <button class="seg-opt" onclick="selectSeg(2,'delivery')">Delivery</button>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">环境评分</label>
+          <div class="chop-picker" id="envPicker"></div>
+        </div>
+        <div>
+          <label class="form-label">服务评分</label>
+          <div class="chop-picker" id="svcPicker"></div>
+        </div>
+        <div class="form-full">
+          <label class="form-label">整体印象</label>
+          <input class="form-input" id="fDineNote" placeholder="如：装修很好，服务一般，下次再来">
+        </div>
+        <div class="form-full">
+          <label class="form-label">心水餐厅</label>
+          <div class="fav-toggle">
+            <button class="fav-btn" id="favYes" onclick="selectFav(true)">是 ❤️</button>
+            <button class="fav-btn" id="favNo" onclick="selectFav(false)">不选</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dish-section-label">菜品</div>
+      <div id="dishEntries"></div>
+      <button class="add-dish-btn" onclick="addDishEntry()">+ 添加菜品</button>
+
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeModal()">取消</button>
+        <button class="btn-primary" onclick="saveRecord()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let data=[],activeCity='all',envSel=0,svcSel=0,dineType='dine',isFav=false,dishCount=0;
+const dishRatings={},dishTypes={};
+const CUISINES=['日式','中式','意大利菜','印度菜','墨西哥菜','地中海菜','法式','泰式','美式','荷兰菜','其他'];
+
+function emojiFor(t){return t==='dessert'?'🍮':'🥢';}
+function ratingStr(n,t){if(!n)return '<span style="color:#aaa">—</span>';return emojiFor(t).repeat(n);}
+function ratingPlain(n,t){return n?emojiFor(t).repeat(n):'—';}
+
+async function loadData(){
+  try{const r=await window.storage.get('rj_v4');if(r&&r.value)data=JSON.parse(r.value);}catch(e){data=[];}
+  render();
+}
+async function saveData(){try{await window.storage.set('rj_v4',JSON.stringify(data));}catch(e){}}
+
+function getCities(){return[...new Set(data.map(d=>d.city).filter(Boolean))];}
+function getCuisines(){return[...new Set([...CUISINES,...data.map(d=>d.cuisine).filter(Boolean)])];}
+
+const dineLabel={dine:'Dine In',take:'Take Out',delivery:'Delivery'};
+
+function render(){
+  const q=(document.getElementById('searchInput').value||'').toLowerCase();
+  const cities=getCities();
+  document.getElementById('cityChips').innerHTML=
+    `<button class="chip ${activeCity==='all'?'active':''}" onclick="setCity('all')">全部</button>`+
+    `<button class="chip ${activeCity==='fav'?'active':''}" onclick="setCity('fav')">❤️ 心水</button>`+
+    cities.map(c=>`<button class="chip ${activeCity===c?'active':''}" onclick="setCity('${c}')">${c}</button>`).join('');
+
+  let filtered=data.filter(r=>{
+    if(activeCity==='fav'&&!r.isFav)return false;
+    if(activeCity!=='all'&&activeCity!=='fav'&&r.city!==activeCity)return false;
+    if(q){const hay=[r.name,r.city,r.cuisine,r.dineNote,...(r.dishes||[]).map(d=>d.name+' '+d.note)].join(' ').toLowerCase();if(!hay.includes(q))return false;}
+    return true;
+  });
+
+  const area=document.getElementById('listArea');
+  if(!filtered.length){
+    area.innerHTML=`<div class="empty" style="grid-column:1/-1">${data.length===0?'还没有记录<br>点击右上角开始添加 🥢':'没有找到匹配的结果'}</div>`;
+    return;
+  }
+  area.innerHTML=filtered.map(r=>{
+    const dishes=(r.dishes||[]).filter(d=>d.name).map(d=>`
+      <div class="dish-row">
+        <div class="dish-main">
+          <span class="dish-name">${d.name}</span>
+          <span class="dish-right">${d.price?`<span class="dish-price">€${d.price}</span>`:''}<span>${ratingStr(d.rating,d.dtype)}</span></span>
+        </div>
+        ${d.note?`<div class="dish-note">${d.note}</div>`:''}
+      </div>`).join('');
+    return `
+    <div class="restaurant-card${r.isFav?' fav':''}">
+      <div class="restaurant-header">
+        <div>
+          <div class="rest-name">${r.isFav?'❤️ ':''}${r.name}</div>
+          <div class="rest-sub">${[r.city,r.cuisine].filter(Boolean).join(' · ')}</div>
+        </div>
+        <div class="rest-ratings">
+          ${r.envRating?`<span class="rating-line">环境 ${ratingPlain(r.envRating,'main')}</span>`:''}
+          ${r.svcRating?`<span class="rating-line">服务 ${ratingPlain(r.svcRating,'main')}</span>`:''}
+        </div>
+      </div>
+      ${dishes?`<div class="dish-list">${dishes}</div>`:''}
+      <div class="card-footer">
+        <div class="footer-row"><span class="footer-label">${dineLabel[r.dineType||'dine']}</span></div>
+        ${r.dineNote?`<div class="footer-row"><span class="footer-label">印象</span><span>${r.dineNote}</span></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setCity(c){activeCity=c;render();}
+
+function selectSeg(idx,val){
+  document.querySelectorAll('#dineTypeSeg .seg-opt').forEach((b,i)=>b.classList.toggle('sel',i===idx));
+  dineType=val;
+}
+
+function buildChopPicker(id,max,cb){
+  document.getElementById(id).innerHTML=
+    [0,...Array.from({length:max},(_,i)=>i+1)].map(v=>
+      `<button class="chop-opt ${v===0?'sel':''}" onclick="pickChop('${id}',${v},this)">${v===0?'—':'🥢'.repeat(v)}</button>`
+    ).join('');
+  window['_cb_'+id]=cb;
+}
+function pickChop(id,val,btn){
+  btn.closest('.chop-picker').querySelectorAll('.chop-opt').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  window['_cb_'+id](val);
+}
+
+function selectFav(yes){
+  isFav=yes;
+  document.getElementById('favYes').className='fav-btn'+(yes?' sel-yes':'');
+  document.getElementById('favNo').className='fav-btn'+(!yes?' sel-no':'');
+}
+
+function toggleNew(id){
+  const el=document.getElementById(id);
+  el.style.display=el.style.display==='none'?'block':'none';
+  if(el.style.display==='block')el.focus();
+}
+
+function populateSelects(){
+  document.getElementById('fCity').innerHTML=`<option value="">— 选择城市 —</option>`+getCities().map(c=>`<option>${c}</option>`).join('');
+  document.getElementById('fCuisine').innerHTML=`<option value="">— 选择菜系 —</option>`+getCuisines().map(c=>`<option>${c}</option>`).join('');
+}
+
+function addDishEntry(dish){
+  dishCount++;
+  const id=dishCount;
+  dishRatings[id]=dish?dish.rating:0;
+  dishTypes[id]=dish?dish.dtype:'main';
+  const el=document.createElement('div');
+  el.className='dish-entry';
+  el.id='de_'+id;
+  el.innerHTML=`
+    <input class="form-input" id="dn_${id}" placeholder="菜名" value="${dish?dish.name:''}">
+    <input class="form-input" id="dp_${id}" placeholder="价格" value="${dish?dish.price:''}">
+    <div class="dish-type-row">
+      <button class="dtype-btn ${(!dish||dish.dtype==='main')?'sel':''}" onclick="pickDtype(${id},'main',this)">🥢 主菜</button>
+      <button class="dtype-btn ${(dish&&dish.dtype==='dessert')?'sel':''}" onclick="pickDtype(${id},'dessert',this)">🍮 甜品</button>
+    </div>
+    <div class="dish-chop-row dish-entry-full" id="dfork_${id}"></div>
+    <input class="form-input dish-entry-full" id="dnote_${id}" placeholder="备注（可选）" value="${dish?dish.note:''}">
+  `;
+  document.getElementById('dishEntries').appendChild(el);
+  setTimeout(()=>{
+    const cur=dish?dish.rating:0;
+    const t=dishTypes[id];
+    document.getElementById('dfork_'+id).innerHTML=
+      [0,1,2,3,4].map(v=>`<button class="dish-chop-opt ${v===cur?'sel':''}" onclick="pickDishChop(${id},${v},this)">${v===0?'—':emojiFor(t).repeat(v)}</button>`).join('');
+  },0);
+}
+
+function pickDtype(id,type,btn){
+  dishTypes[id]=type;
+  btn.closest('.dish-type-row').querySelectorAll('.dtype-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  const cur=dishRatings[id]||0;
+  document.getElementById('dfork_'+id).innerHTML=
+    [0,1,2,3,4].map(v=>`<button class="dish-chop-opt ${v===cur?'sel':''}" onclick="pickDishChop(${id},${v},this)">${v===0?'—':emojiFor(type).repeat(v)}</button>`).join('');
+}
+
+function pickDishChop(id,val,btn){
+  dishRatings[id]=val;
+  btn.closest('.dish-chop-row').querySelectorAll('.dish-chop-opt').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+function openModal(){
+  dishCount=0;envSel=0;svcSel=0;dineType='dine';isFav=false;
+  Object.keys(dishRatings).forEach(k=>delete dishRatings[k]);
+  Object.keys(dishTypes).forEach(k=>delete dishTypes[k]);
+  ['fName','fDineNote','fCityNew','fCuisineNew'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fCityNew').style.display='none';
+  document.getElementById('fCuisineNew').style.display='none';
+  document.getElementById('dishEntries').innerHTML='';
+  selectSeg(0,'dine');
+  selectFav(false);
+  populateSelects();
+  buildChopPicker('envPicker',3,v=>envSel=v);
+  buildChopPicker('svcPicker',3,v=>svcSel=v);
+  addDishEntry();
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
+function closeIfBg(e){if(e.target===document.getElementById('modalOverlay'))closeModal();}
+
+function saveRecord(){
+  const name=document.getElementById('fName').value.trim();
+  if(!name){document.getElementById('fName').focus();return;}
+  let city=document.getElementById('fCity').value;
+  const cn=document.getElementById('fCityNew').value.trim();if(cn)city=cn;
+  let cuisine=document.getElementById('fCuisine').value;
+  const cun=document.getElementById('fCuisineNew').value.trim();if(cun)cuisine=cun;
+  const dishes=[];
+  for(let i=1;i<=dishCount;i++){
+    const dn=document.getElementById('dn_'+i);if(!dn)continue;
+    const dname=dn.value.trim();if(!dname)continue;
+    dishes.push({name:dname,price:document.getElementById('dp_'+i).value.trim(),rating:dishRatings[i]||0,dtype:dishTypes[i]||'main',note:document.getElementById('dnote_'+i).value.trim()});
+  }
+  data.unshift({id:Date.now(),city,name,cuisine,dineType,envRating:envSel,svcRating:svcSel,dineNote:document.getElementById('fDineNote').value.trim(),isFav,dishes});
+  saveData();closeModal();render();
+}
+
+loadData();
+</script>
