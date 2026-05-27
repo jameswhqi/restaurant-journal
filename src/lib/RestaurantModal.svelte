@@ -255,51 +255,63 @@
     <div class="section-label">菜品</div>
     {#each fDishes as dish, i}
       <div class="dish-entry">
-        <input bind:value={dish.name} placeholder="菜名" />
-        <input bind:value={dish.price} placeholder="价格" />
-        <button class="remove-dish" onclick={() => removeDish(i)}>✕</button>
-        <div class="dish-types">
-          <button
-            class="dtype-btn"
-            class:sel={dish.dtype === "main"}
-            onclick={() => (dish.dtype = "main")}>🥢 主菜</button
-          >
-          <button
-            class="dtype-btn"
-            class:sel={dish.dtype === "dessert"}
-            onclick={() => (dish.dtype = "dessert")}>🍮 甜品</button
-          >
-          <button
-            class="dtype-btn"
-            class:sel={dish.dtype === "drink"}
-            onclick={() => (dish.dtype = "drink")}>🍻 饮品</button
-          >
-        </div>
-        <div class="picker">
-          {#each [-1, 0, 1, 2, 3, 4] as v}
+        <div class="dish-fields">
+          <div class="dish-name-price">
+            <input
+              bind:value={dish.name}
+              placeholder="菜名"
+              class="dish-name"
+            />
+            <input
+              bind:value={dish.price}
+              placeholder="价格"
+              class="dish-price"
+            />
+          </div>
+          <div class="dish-types">
             <button
-              class="pick-btn"
-              class:sel={dish.rating === v}
-              onclick={() => (dish.rating = v)}
+              class="dtype-btn"
+              class:sel={dish.dtype === "main"}
+              onclick={() => (dish.dtype = "main")}>🥢 主菜</button
             >
-              {v === -1
-                ? "💣"
-                : v === 0
-                  ? "—"
-                  : (dish.dtype === "dessert"
-                      ? "🍮"
-                      : dish.dtype === "drink"
-                        ? "🍻"
-                        : "🥢"
-                    ).repeat(v)}
-            </button>
-          {/each}
+            <button
+              class="dtype-btn"
+              class:sel={dish.dtype === "dessert"}
+              onclick={() => (dish.dtype = "dessert")}>🍮 甜品</button
+            >
+            <button
+              class="dtype-btn"
+              class:sel={dish.dtype === "drink"}
+              onclick={() => (dish.dtype = "drink")}>🍻 饮品</button
+            >
+          </div>
+          <div class="picker">
+            {#each [-1, 0, 1, 2, 3, 4] as v}
+              <button
+                class="pick-btn"
+                class:sel={dish.rating === v}
+                onclick={() => (dish.rating = v)}
+              >
+                {v === -1
+                  ? "💣"
+                  : v === 0
+                    ? "—"
+                    : (dish.dtype === "dessert"
+                        ? "🍮"
+                        : dish.dtype === "drink"
+                          ? "🍻"
+                          : "🥢"
+                      ).repeat(v)}
+              </button>
+            {/each}
+          </div>
+          <input
+            bind:value={dish.note}
+            placeholder="备注（可选）"
+            class="note-input"
+          />
         </div>
-        <input
-          bind:value={dish.note}
-          placeholder="备注（可选）"
-          class="note-input"
-        />
+        <button class="remove-dish" onclick={() => removeDish(i)}>✕</button>
       </div>
     {/each}
     <button class="add-dish-btn" onclick={addDish}>+ 添加菜品</button>
@@ -333,8 +345,7 @@
     background: #fff;
     border-radius: 14px;
     padding: 24px;
-    width: 100%;
-    max-width: 640px;
+    width: min(640px, calc(100vw - 32px));
   }
   .modal-title {
     font-size: 16px;
@@ -343,7 +354,7 @@
   }
   .form-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 12px;
   }
   .form-grid label {
@@ -411,7 +422,7 @@
   }
   .dish-entry {
     display: grid;
-    grid-template-columns: 2fr 1fr auto;
+    grid-template-columns: 1fr auto;
     gap: 8px;
     background: #f7f7f7;
     border-radius: 8px;
@@ -419,15 +430,33 @@
     margin-bottom: 8px;
     align-items: start;
   }
-  .dish-entry input {
+  .dish-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .dish-name-price {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .dish-name-price .dish-name {
+    flex: 2;
+    min-width: 120px;
+  }
+  .dish-name-price .dish-price {
+    flex: 1;
+    min-width: 80px;
+  }
+  .dish-fields input {
     padding: 8px 10px;
     border: 1px solid #d0d0d0;
     border-radius: 8px;
     font-size: 13px;
   }
   .dish-types {
-    grid-column: 1 / -1;
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
   }
   .dtype-btn {
@@ -443,9 +472,6 @@
     background: #1a1a1a;
     color: #fff;
     border-color: #1a1a1a;
-  }
-  .note-input {
-    grid-column: 1 / -1;
   }
   .remove-dish {
     background: none;

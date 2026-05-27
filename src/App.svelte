@@ -391,8 +391,10 @@
   }
   .header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
     margin-bottom: 14px;
   }
   .header h1 {
@@ -401,6 +403,7 @@
   }
   .header-right {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     align-items: center;
   }
