@@ -445,7 +445,7 @@
 <style>
   .app {
     padding: 16px;
-    max-width: 860px;
+    max-width: 1200px;
     margin: 0 auto;
     font-family: system-ui, sans-serif;
   }
@@ -458,7 +458,7 @@
     margin-bottom: 14px;
   }
   .header h1 {
-    font-size: 18px;
+    font-size: 19px;
     font-weight: 500;
   }
   .header-right {
@@ -473,7 +473,7 @@
     border: none;
     border-radius: 8px;
     padding: 8px 16px;
-    font-size: 13px;
+    font-size: 14px;
     cursor: pointer;
   }
   .delete-batch-btn {
@@ -482,7 +482,7 @@
     border: none;
     border-radius: 8px;
     padding: 8px 16px;
-    font-size: 13px;
+    font-size: 14px;
     cursor: pointer;
   }
   .delete-batch-btn:disabled {
@@ -494,7 +494,7 @@
     border: 1px solid #d0d0d0;
     border-radius: 8px;
     padding: 8px 12px;
-    font-size: 13px;
+    font-size: 14px;
     cursor: pointer;
     color: #888;
   }
@@ -503,7 +503,7 @@
     border: 1px solid #d0d0d0;
     border-radius: 8px;
     padding: 8px 12px;
-    font-size: 13px;
+    font-size: 14px;
     cursor: pointer;
     color: #444;
   }
@@ -531,17 +531,17 @@
     gap: 12px;
   }
   .import-result-title {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 600;
   }
   .import-ok {
     color: #27ae60;
-    font-size: 14px;
+    font-size: 15px;
     margin: 0;
   }
   .import-none {
     color: #888;
-    font-size: 14px;
+    font-size: 15px;
     margin: 0;
   }
   .import-errors {
@@ -550,13 +550,13 @@
     padding: 10px 12px;
   }
   .import-errors-title {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     color: #c0392b;
     margin-bottom: 6px;
   }
   .import-error-row {
-    font-size: 12px;
+    font-size: 13px;
     color: #c0392b;
     line-height: 1.6;
   }
@@ -571,7 +571,7 @@
     padding: 8px 12px;
     border: 1px solid #d0d0d0;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 15px;
     margin-bottom: 10px;
   }
   .chips {
@@ -584,7 +584,7 @@
   .chip {
     padding: 5px 14px;
     border-radius: 20px;
-    font-size: 12px;
+    font-size: 13px;
     border: 1px solid #d0d0d0;
     background: #fff;
     color: #666;
@@ -600,7 +600,7 @@
     text-align: center;
     padding: 56px 20px;
     color: #999;
-    font-size: 14px;
+    font-size: 15px;
   }
   .error {
     color: #c0392b;
@@ -608,12 +608,17 @@
     background: #fdecea;
     border-radius: 8px;
     margin-bottom: 12px;
-    font-size: 13px;
+    font-size: 14px;
   }
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
     gap: 12px;
+  }
+  @media (min-width: 900px) {
+    .grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
   .batch-toolbar {
     display: flex;
@@ -626,7 +631,7 @@
     border: 1px solid #d0d0d0;
     border-radius: 6px;
     padding: 4px 10px;
-    font-size: 12px;
+    font-size: 13px;
     cursor: pointer;
     color: #444;
   }
@@ -634,7 +639,7 @@
     background: #f5f5f5;
   }
   .batch-count {
-    font-size: 12px;
+    font-size: 13px;
     color: #888;
     margin-left: 4px;
   }
