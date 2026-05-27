@@ -1,26 +1,25 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { supabase } from "./lib/supabase";
-  import type { Restaurant, Dish, DineType } from "./lib/database.types";
+  import type { Restaurant } from "./lib/database.types";
   import type { Session } from "@supabase/supabase-js";
+  import LoginPage from "./lib/LoginPage.svelte";
+  import RestaurantCard from "./lib/RestaurantCard.svelte";
+  import RestaurantModal from "./lib/RestaurantModal.svelte";
 
   // ── Auth state ───────────────────────────────────────────────────────────
   let session = $state<Session | null>(null);
   let authLoading = $state(true);
-  let loginEmail = $state("");
-  let loginPassword = $state("");
-  let loginError = $state<string | null>(null);
-  let loginLoading = $state(false);
 
-  async function signIn() {
-    loginLoading = true;
-    loginError = null;
+  async function signIn(
+    email: string,
+    password: string,
+  ): Promise<string | undefined> {
     const { error } = await supabase.auth.signInWithPassword({
-      email: loginEmail,
-      password: loginPassword,
+      email,
+      password,
     });
-    if (error) loginError = error.message;
-    loginLoading = false;
+    return error ? error.message : undefined;
   }
 
   async function signOut() {
@@ -28,54 +27,21 @@
   }
 
   // ── State ────────────────────────────────────────────────────────────────
-  let restaurants: Restaurant[] = $state([]);
+  let restaurants = $state<Restaurant[]>([]);
   let loading = $state(true);
-  let error = $state<string | null>(null);
+  let error = $state<string | undefined>(undefined);
   let searchQuery = $state("");
   let activeCity = $state("all");
   let showModal = $state(false);
-  let saving = $state(false);
-
-  // ── Form state ───────────────────────────────────────────────────────────
-  let fName = $state("");
-  let fCity = $state("");
-  let fCuisine = $state("");
-  let fDineType = $state<DineType>("dine");
-  let fEnvRating = $state(0);
-  let fSvcRating = $state(0);
-  let fDineNote = $state("");
-  let fIsFav = $state(false);
-  let fDishes = $state<
-    Array<{
-      name: string;
-      price: string;
-      rating: number;
-      dtype: "main" | "dessert";
-      note: string;
-    }>
-  >([]);
-
-  const CUISINES = [
-    "日式",
-    "中式",
-    "意大利菜",
-    "印度菜",
-    "墨西哥菜",
-    "地中海菜",
-    "法式",
-    "泰式",
-    "美式",
-    "其他",
-  ];
-  const dineLabel: Record<DineType, string> = {
-    dine: "Dine In",
-    take: "Take Out",
-    delivery: "Delivery",
-  };
+  let editingRestaurant = $state<Restaurant | undefined>(undefined);
 
   // ── Derived ──────────────────────────────────────────────────────────────
   const cities = $derived([
     ...new Set(restaurants.map((r) => r.city).filter(Boolean) as string[]),
+  ]);
+
+  const cuisines = $derived([
+    ...new Set(restaurants.map((r) => r.cuisine).filter(Boolean) as string[]),
   ]);
 
   const filtered = $derived(
@@ -90,7 +56,7 @@
           r.city,
           r.cuisine,
           r.dine_note,
-          ...r.dishes.map((d: Dish) => d.name + " " + d.note),
+          ...r.dishes.map((d) => d.name + " " + d.note),
         ]
           .join(" ")
           .toLowerCase();
@@ -103,17 +69,14 @@
   // ── Data loading ─────────────────────────────────────────────────────────
   async function loadRestaurants() {
     loading = true;
-    error = null;
+    error = undefined;
     const { data, error: err } = await supabase
       .from("restaurants")
       .select("*, dishes(*)")
       .order("created_at", { ascending: false });
 
-    if (err) {
-      error = err.message;
-    } else {
-      restaurants = (data ?? []) as Restaurant[];
-    }
+    if (err) error = err.message;
+    else restaurants = (data ?? []) as Restaurant[];
     loading = false;
   }
 
@@ -136,125 +99,38 @@
   });
 
   // ── Modal helpers ─────────────────────────────────────────────────────────
-  function openModal() {
-    fName = "";
-    fCity = "";
-    fCuisine = "";
-    fDineType = "dine";
-    fEnvRating = 0;
-    fSvcRating = 0;
-    fDineNote = "";
-    fIsFav = false;
-    fDishes = [{ name: "", price: "", rating: 0, dtype: "main", note: "" }];
+  function openAddModal() {
+    editingRestaurant = undefined;
     showModal = true;
   }
 
-  function addDish() {
-    fDishes = [
-      ...fDishes,
-      { name: "", price: "", rating: 0, dtype: "main", note: "" },
-    ];
+  function openEditModal(r: Restaurant) {
+    editingRestaurant = r;
+    showModal = true;
   }
 
-  function removeDish(i: number) {
-    fDishes = fDishes.filter((_, idx) => idx !== i);
-  }
-
-  // ── Save ──────────────────────────────────────────────────────────────────
-  async function saveRecord() {
-    if (!fName.trim()) return;
-    saving = true;
-
-    const { data: rest, error: restErr } = await supabase
+  // ── Delete ────────────────────────────────────────────────────────────────
+  async function deleteRestaurant(id: number) {
+    if (!confirm("确定要删除这条记录吗？")) return;
+    const { error: err } = await supabase
       .from("restaurants")
-      .insert({
-        name: fName.trim(),
-        city: fCity.trim() || null,
-        cuisine: fCuisine.trim() || null,
-        dine_type: fDineType,
-        env_rating: fEnvRating,
-        svc_rating: fSvcRating,
-        dine_note: fDineNote.trim() || null,
-        is_fav: fIsFav,
-      })
-      .select()
-      .single();
-
-    if (restErr) {
-      error = restErr.message;
-      saving = false;
-      return;
-    }
-
-    const validDishes = fDishes.filter((d) => d.name.trim());
-    if (validDishes.length > 0) {
-      const { error: dishErr } = await supabase.from("dishes").insert(
-        validDishes.map((d) => ({
-          restaurant_id: rest.id,
-          name: d.name.trim(),
-          price: d.price.trim() || null,
-          rating: d.rating,
-          dtype: d.dtype,
-          note: d.note.trim() || null,
-        })),
-      );
-      if (dishErr) {
-        error = dishErr.message;
-        saving = false;
-        return;
-      }
-    }
-
-    saving = false;
-    showModal = false;
-    await loadRestaurants();
-  }
-
-  function ratingEmoji(n: number, dtype: "main" | "dessert") {
-    if (!n) return "—";
-    return (dtype === "dessert" ? "🍮" : "🥢").repeat(n);
+      .delete()
+      .eq("id", id);
+    if (err) error = err.message;
+    else restaurants = restaurants.filter((r) => r.id !== id);
   }
 </script>
 
 {#if authLoading}
   <div class="auth-loading">加载中…</div>
 {:else if !session}
-  <div class="login-wrap">
-    <div class="login-box">
-      <h1>美食日记</h1>
-      <form
-        onsubmit={(e) => {
-          e.preventDefault();
-          signIn();
-        }}
-      >
-        <input
-          type="email"
-          bind:value={loginEmail}
-          placeholder="邮箱"
-          required
-          autocomplete="email"
-        />
-        <input
-          type="password"
-          bind:value={loginPassword}
-          placeholder="密码"
-          required
-          autocomplete="current-password"
-        />
-        {#if loginError}<p class="login-error">{loginError}</p>{/if}
-        <button type="submit" disabled={loginLoading}
-          >{loginLoading ? "登录中…" : "登录"}</button
-        >
-      </form>
-    </div>
-  </div>
+  <LoginPage onSignIn={signIn} />
 {:else}
   <div class="app">
     <div class="header">
       <h1>美食日记</h1>
       <div class="header-right">
-        <button class="add-btn" onclick={openModal}>+ 添加餐厅</button>
+        <button class="add-btn" onclick={openAddModal}>+ 添加餐厅</button>
         <button class="signout-btn" onclick={signOut}>退出</button>
       </div>
     </div>
@@ -301,216 +177,28 @@
     {:else}
       <div class="grid">
         {#each filtered as r (r.id)}
-          <div class="card" class:fav={r.is_fav}>
-            <div class="card-header">
-              <div>
-                <div class="rest-name">{r.is_fav ? "❤️ " : ""}{r.name}</div>
-                <div class="rest-sub">
-                  {[r.city, r.cuisine].filter(Boolean).join(" · ")}
-                </div>
-              </div>
-              <div class="ratings">
-                {#if r.env_rating}<span
-                    >环境 {ratingEmoji(r.env_rating, "main")}</span
-                  >{/if}
-                {#if r.svc_rating}<span
-                    >服务 {ratingEmoji(r.svc_rating, "main")}</span
-                  >{/if}
-              </div>
-            </div>
-            {#if r.dishes?.length}
-              <div class="dishes">
-                {#each r.dishes as d (d.id)}
-                  <div class="dish">
-                    <span class="dish-name">{d.name}</span>
-                    <span class="dish-right">
-                      {#if d.price}<span class="dish-price">€{d.price}</span
-                        >{/if}
-                      <span
-                        >{ratingEmoji(
-                          d.rating,
-                          d.dtype as "main" | "dessert",
-                        )}</span
-                      >
-                    </span>
-                    {#if d.note}<div class="dish-note">{d.note}</div>{/if}
-                  </div>
-                {/each}
-              </div>
-            {/if}
-            <div class="card-footer">
-              <span class="label"
-                >{dineLabel[(r.dine_type ?? "dine") as DineType]}</span
-              >
-              {#if r.dine_note}<span>{r.dine_note}</span>{/if}
-            </div>
-          </div>
+          <RestaurantCard
+            restaurant={r}
+            onEdit={() => openEditModal(r)}
+            onDelete={() => deleteRestaurant(r.id)}
+          />
         {/each}
       </div>
     {/if}
   </div>
-  <!-- end .app -->
 {/if}
 
-<!-- Modal -->
 {#if showModal}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <div
-    role="presentation"
-    class="overlay"
-    onclick={(e) => {
-      if (e.target === e.currentTarget) showModal = false;
-    }}
-  >
-    <div class="modal">
-      <div class="modal-title">添加餐厅记录</div>
-
-      <div class="form-grid">
-        <label
-          >城市
-          <input
-            bind:value={fCity}
-            placeholder="如：Amsterdam"
-            list="city-list"
-          />
-          <datalist id="city-list"
-            >{#each cities as c}<option value={c}></option>{/each}</datalist
-          >
-        </label>
-        <label
-          >餐厅名称
-          <input bind:value={fName} placeholder="如：Takumi" />
-        </label>
-        <label
-          >菜系
-          <input
-            bind:value={fCuisine}
-            placeholder="如：日式"
-            list="cuisine-list"
-          />
-          <datalist id="cuisine-list"
-            >{#each CUISINES as c}<option value={c}></option>{/each}</datalist
-          >
-        </label>
-        <label
-          >用餐方式
-          <div class="seg">
-            {#each ["dine", "take", "delivery"] as DineType[] as t}
-              <button
-                class="seg-btn"
-                class:sel={fDineType === t}
-                onclick={() => (fDineType = t)}>{dineLabel[t]}</button
-              >
-            {/each}
-          </div>
-        </label>
-        <label
-          >环境评分
-          <div class="picker">
-            {#each [0, 1, 2, 3] as v}
-              <button
-                class="pick-btn"
-                class:sel={fEnvRating === v}
-                onclick={() => (fEnvRating = v)}
-                >{v === 0 ? "—" : "🥢".repeat(v)}</button
-              >
-            {/each}
-          </div>
-        </label>
-        <label
-          >服务评分
-          <div class="picker">
-            {#each [0, 1, 2, 3] as v}
-              <button
-                class="pick-btn"
-                class:sel={fSvcRating === v}
-                onclick={() => (fSvcRating = v)}
-                >{v === 0 ? "—" : "🥢".repeat(v)}</button
-              >
-            {/each}
-          </div>
-        </label>
-        <label class="full"
-          >整体印象
-          <input bind:value={fDineNote} placeholder="如：装修很好，服务一般" />
-        </label>
-        <label class="full"
-          >心水餐厅
-          <div class="seg">
-            <button
-              class="seg-btn"
-              class:sel={fIsFav}
-              onclick={() => (fIsFav = true)}>是 ❤️</button
-            >
-            <button
-              class="seg-btn"
-              class:sel={!fIsFav}
-              onclick={() => (fIsFav = false)}>不选</button
-            >
-          </div>
-        </label>
-      </div>
-
-      <div class="section-label">菜品</div>
-      {#each fDishes as dish, i}
-        <div class="dish-entry">
-          <input bind:value={dish.name} placeholder="菜名" />
-          <input bind:value={dish.price} placeholder="价格" />
-          <div class="dish-types">
-            <button
-              class="dtype-btn"
-              class:sel={dish.dtype === "main"}
-              onclick={() => (dish.dtype = "main")}>🥢 主菜</button
-            >
-            <button
-              class="dtype-btn"
-              class:sel={dish.dtype === "dessert"}
-              onclick={() => (dish.dtype = "dessert")}>🍮 甜品</button
-            >
-          </div>
-          <div class="picker">
-            {#each [0, 1, 2, 3, 4] as v}
-              <button
-                class="pick-btn"
-                class:sel={dish.rating === v}
-                onclick={() => (dish.rating = v)}
-              >
-                {v === 0
-                  ? "—"
-                  : (dish.dtype === "dessert" ? "🍮" : "🥢").repeat(v)}
-              </button>
-            {/each}
-          </div>
-          <input
-            bind:value={dish.note}
-            placeholder="备注（可选）"
-            class="note-input"
-          />
-          <button class="remove-dish" onclick={() => removeDish(i)}>✕</button>
-        </div>
-      {/each}
-      <button class="add-dish-btn" onclick={addDish}>+ 添加菜品</button>
-
-      <div class="btn-row">
-        <button class="btn-cancel" onclick={() => (showModal = false)}
-          >取消</button
-        >
-        <button class="btn-primary" onclick={saveRecord} disabled={saving}>
-          {saving ? "保存中…" : "保存"}
-        </button>
-      </div>
-    </div>
-  </div>
+  <RestaurantModal
+    restaurantToEdit={editingRestaurant}
+    {cities}
+    {cuisines}
+    onClose={() => (showModal = false)}
+    onSaved={loadRestaurants}
+  />
 {/if}
 
 <style>
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
   .app {
     padding: 16px;
     max-width: 860px;
@@ -556,60 +244,6 @@
     font-family: system-ui, sans-serif;
     color: #999;
   }
-  .login-wrap {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: system-ui, sans-serif;
-    background: #f5f5f5;
-  }
-  .login-box {
-    background: #fff;
-    border-radius: 14px;
-    padding: 32px;
-    width: 100%;
-    max-width: 360px;
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
-  }
-  .login-box h1 {
-    font-size: 20px;
-    font-weight: 500;
-    margin-bottom: 24px;
-    text-align: center;
-  }
-  .login-box form {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .login-box input {
-    padding: 10px 12px;
-    border: 1px solid #d0d0d0;
-    border-radius: 8px;
-    font-size: 14px;
-  }
-  .login-box button {
-    padding: 12px;
-    background: #1a1a1a;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    cursor: pointer;
-    font-weight: 500;
-  }
-  .login-box button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  .login-error {
-    color: #c0392b;
-    font-size: 13px;
-    background: #fdecea;
-    padding: 8px 12px;
-    border-radius: 8px;
-  }
   .search {
     width: 100%;
     padding: 8px 12px;
@@ -654,272 +288,9 @@
     margin-bottom: 12px;
     font-size: 13px;
   }
-
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 12px;
-  }
-  .card {
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 12px;
-    overflow: hidden;
-  }
-  .card.fav {
-    border: 1.5px solid #c0392b;
-  }
-  .card-header {
-    padding: 12px 14px 10px;
-    border-bottom: 1px solid #f0f0f0;
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-  }
-  .rest-name {
-    font-size: 15px;
-    font-weight: 500;
-  }
-  .rest-sub {
-    font-size: 12px;
-    color: #888;
-    margin-top: 2px;
-  }
-  .ratings {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 3px;
-    font-size: 11px;
-    color: #888;
-  }
-  .dishes {
-    padding: 6px 14px 10px;
-  }
-  .dish {
-    padding: 6px 0;
-    border-bottom: 1px solid #f0f0f0;
-  }
-  .dish:last-child {
-    border-bottom: none;
-  }
-  .dish {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 4px;
-  }
-  .dish-name {
-    font-size: 13px;
-    flex: 1;
-  }
-  .dish-right {
-    display: flex;
-    gap: 8px;
-    font-size: 12px;
-    color: #888;
-  }
-  .dish-price {
-    font-size: 12px;
-    color: #888;
-  }
-  .dish-note {
-    font-size: 11px;
-    color: #aaa;
-    width: 100%;
-  }
-  .card-footer {
-    padding: 7px 14px;
-    font-size: 12px;
-    color: #888;
-    border-top: 1px solid #f0f0f0;
-    display: flex;
-    gap: 8px;
-  }
-  .label {
-    color: #bbb;
-  }
-
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.3);
-    z-index: 50;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 24px 16px;
-    overflow-y: auto;
-  }
-  .modal {
-    background: #fff;
-    border-radius: 14px;
-    padding: 24px;
-    width: 100%;
-    max-width: 640px;
-  }
-  .modal-title {
-    font-size: 16px;
-    font-weight: 500;
-    margin-bottom: 18px;
-  }
-  .form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-  .form-grid label {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    font-size: 12px;
-    color: #666;
-  }
-  .form-grid label.full {
-    grid-column: 1 / -1;
-  }
-  .form-grid input {
-    padding: 9px 12px;
-    border: 1px solid #d0d0d0;
-    border-radius: 8px;
-    font-size: 14px;
-  }
-  .seg {
-    display: flex;
-    border: 1px solid #d0d0d0;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  .seg-btn {
-    flex: 1;
-    padding: 9px 4px;
-    font-size: 13px;
-    cursor: pointer;
-    border: none;
-    border-right: 1px solid #d0d0d0;
-    background: #fff;
-    color: #666;
-  }
-  .seg-btn:last-child {
-    border-right: none;
-  }
-  .seg-btn.sel {
-    background: #1a1a1a;
-    color: #fff;
-  }
-  .picker {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  .pick-btn {
-    padding: 6px 10px;
-    border: 1px solid #d0d0d0;
-    border-radius: 8px;
-    font-size: 13px;
-    cursor: pointer;
-    background: #fff;
-    color: #666;
-  }
-  .pick-btn.sel {
-    background: #1a1a1a;
-    color: #fff;
-    border-color: #1a1a1a;
-  }
-
-  .section-label {
-    font-size: 13px;
-    font-weight: 500;
-    margin: 20px 0 8px;
-  }
-  .dish-entry {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 8px;
-    background: #f7f7f7;
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 8px;
-    position: relative;
-  }
-  .dish-entry input {
-    padding: 8px 10px;
-    border: 1px solid #d0d0d0;
-    border-radius: 8px;
-    font-size: 13px;
-  }
-  .dish-types {
-    grid-column: 1 / -1;
-    display: flex;
-    gap: 6px;
-  }
-  .dtype-btn {
-    padding: 6px 12px;
-    border: 1px solid #d0d0d0;
-    border-radius: 8px;
-    font-size: 12px;
-    cursor: pointer;
-    background: #fff;
-    color: #666;
-  }
-  .dtype-btn.sel {
-    background: #1a1a1a;
-    color: #fff;
-    border-color: #1a1a1a;
-  }
-  .note-input {
-    grid-column: 1 / -1;
-  }
-  .remove-dish {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: none;
-    border: none;
-    font-size: 14px;
-    cursor: pointer;
-    color: #aaa;
-  }
-  .add-dish-btn {
-    width: 100%;
-    padding: 9px;
-    border: 1px dashed #d0d0d0;
-    border-radius: 8px;
-    background: none;
-    font-size: 13px;
-    color: #888;
-    cursor: pointer;
-    margin-top: 4px;
-  }
-
-  .btn-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 20px;
-  }
-  .btn-primary {
-    flex: 1;
-    padding: 12px;
-    background: #1a1a1a;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    cursor: pointer;
-    font-weight: 500;
-  }
-  .btn-primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  .btn-cancel {
-    padding: 12px 16px;
-    background: none;
-    border: 1px solid #d0d0d0;
-    border-radius: 8px;
-    font-size: 14px;
-    cursor: pointer;
-    color: #666;
   }
 </style>
