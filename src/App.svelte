@@ -93,22 +93,33 @@
     loading = false;
   }
 
-  onMount(async () => {
-    const {
-      data: { session: s },
-    } = await supabase.auth.getSession();
-    session = s;
-    authLoading = false;
-    if (s) loadRestaurants();
-
-    supabase.auth.onAuthStateChange((_event, s) => {
+  onMount(() => {
+    const init = async () => {
+      const {
+        data: { session: s },
+      } = await supabase.auth.getSession();
       session = s;
+      authLoading = false;
       if (s) loadRestaurants();
-      else {
+    };
+
+    init();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, s) => {
+      session = s;
+      // Only clear data on sign-out; initial load is handled by onMount
+      if (event === "SIGNED_OUT") {
         restaurants = [];
         loading = true;
       }
     });
+
+    // Cleanup subscription on unmount
+    return () => {
+      subscription.unsubscribe();
+    };
   });
 
   // ── Modal helpers ─────────────────────────────────────────────────────────
