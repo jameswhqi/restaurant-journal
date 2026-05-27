@@ -28,6 +28,19 @@ export function dineLabels(types: DineType[]): string {
   return types.map((t) => dineLabel[t] ?? t).join(" & ");
 }
 
+// Sort Latin names before Chinese names; Chinese names sorted by pinyin.
+const _pinyinCollator = new Intl.Collator("zh-u-co-pinyin", {
+  sensitivity: "base",
+});
+const _cjkRe = /^[\u4e00-\u9fff\u3400-\u4dbf]/;
+
+export function compareNames(a: string, b: string): number {
+  const aChinese = _cjkRe.test(a);
+  const bChinese = _cjkRe.test(b);
+  if (aChinese !== bChinese) return aChinese ? 1 : -1;
+  return _pinyinCollator.compare(a, b);
+}
+
 export const CUISINES = [
   "日式",
   "中式",

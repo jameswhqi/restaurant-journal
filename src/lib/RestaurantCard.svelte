@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Restaurant, DineType } from "./database.types";
-  import { ratingEmoji, dineLabels } from "./utils";
+  import { ratingEmoji, dineLabels, compareNames } from "./utils";
 
   let {
     restaurant: r,
@@ -61,7 +61,7 @@
 
   {#if r.dishes?.length}
     <div class="dishes">
-      {#each r.dishes as d (d.id)}
+      {#each [...r.dishes].sort( (a, b) => compareNames(a.name, b.name), ) as d (d.id)}
         <div class="dish">
           <span class="dish-name">{d.name}</span>
           <span class="dish-right">

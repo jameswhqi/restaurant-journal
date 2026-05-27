@@ -7,6 +7,7 @@
   import RestaurantCard from "./lib/RestaurantCard.svelte";
   import RestaurantModal from "./lib/RestaurantModal.svelte";
   import { downloadYaml, parseYaml } from "./lib/importExport";
+  import { compareNames } from "./lib/utils";
 
   // ── Auth state ───────────────────────────────────────────────────────────
   let session = $state<Session | null>(null);
@@ -37,6 +38,7 @@
   let editingRestaurant = $state<Restaurant | undefined>(undefined);
   let batchMode = $state(false);
   let selectedIds = $state(new Set<number>());
+  let activeCuisine = $state("all");
 
   // ── Derived ──────────────────────────────────────────────────────────────
   const cities = $derived([
@@ -48,25 +50,33 @@
   ]);
 
   const filtered = $derived(
-    restaurants.filter((r) => {
-      if (activeCity === "fav" && !r.is_fav) return false;
-      if (activeCity !== "all" && activeCity !== "fav" && r.city !== activeCity)
-        return false;
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        const hay = [
-          r.name,
-          r.city,
-          r.cuisine,
-          r.dine_note,
-          ...r.dishes.map((d) => d.name + " " + d.note),
-        ]
-          .join(" ")
-          .toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    }),
+    restaurants
+      .filter((r) => {
+        if (activeCity === "fav" && !r.is_fav) return false;
+        if (
+          activeCity !== "all" &&
+          activeCity !== "fav" &&
+          r.city !== activeCity
+        )
+          return false;
+        if (activeCuisine !== "all" && r.cuisine !== activeCuisine)
+          return false;
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const hay = [
+            r.name,
+            r.city,
+            r.cuisine,
+            r.dine_note,
+            ...r.dishes.map((d) => d.name + " " + d.note),
+          ]
+            .join(" ")
+            .toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => compareNames(a.name, b.name)),
   );
 
   // ── Data loading ─────────────────────────────────────────────────────────
@@ -175,6 +185,7 @@
   let importing = $state(false);
   let importErrors = $state<string[]>([]);
   let importCount = $state(0);
+  let importMerged = $state(0);
   let importDone = $state(false);
 
   function triggerImport() {
@@ -195,8 +206,35 @@
       importing = true;
       importDone = false;
       importCount = 0;
+      importMerged = 0;
       let insertErrors: string[] = [...errors];
       for (const r of parsed) {
+        const existing = restaurants.find(
+          (e) => e.name === r.name && (e.city ?? null) === (r.city ?? null),
+        );
+        if (existing) {
+          if (r.dishes.length > 0) {
+            const { error: dishErr } = await supabase.from("dishes").insert(
+              r.dishes.map((d) => ({
+                restaurant_id: existing.id,
+                name: d.name,
+                dtype: d.dtype,
+                rating: d.rating,
+                price: d.price || null,
+                note: d.note || null,
+              })),
+            );
+            if (dishErr) {
+              insertErrors = [
+                ...insertErrors,
+                `"${r.name}" dishes (merge): ${dishErr.message}`,
+              ];
+              continue;
+            }
+          }
+          importMerged += 1;
+          continue;
+        }
         const { data: rest, error: restErr } = await supabase
           .from("restaurants")
           .insert({
@@ -247,6 +285,7 @@
     importDone = false;
     importErrors = [];
     importCount = 0;
+    importMerged = 0;
   }
 </script>
 
@@ -318,6 +357,22 @@
         >
       {/each}
     </div>
+    {#if cuisines.length > 0}
+      <div class="chips">
+        <button
+          class="chip"
+          class:active={activeCuisine === "all"}
+          onclick={() => (activeCuisine = "all")}>全部</button
+        >
+        {#each cuisines as cuisine}
+          <button
+            class="chip"
+            class:active={activeCuisine === cuisine}
+            onclick={() => (activeCuisine = cuisine)}>{cuisine}</button
+          >
+        {/each}
+      </div>
+    {/if}
 
     {#if error}
       <p class="error">{error}</p>
@@ -364,8 +419,13 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="import-result" onclick={(e) => e.stopPropagation()}>
       <div class="import-result-title">导入完成</div>
-      {#if importCount > 0}
-        <p class="import-ok">成功导入 {importCount} 家餐厅</p>
+      {#if importCount > 0 || importMerged > 0}
+        {#if importCount > 0}
+          <p class="import-ok">新增 {importCount} 家餐厅</p>
+        {/if}
+        {#if importMerged > 0}
+          <p class="import-ok">合并菜品至 {importMerged} 家已有餐厅</p>
+        {/if}
       {:else}
         <p class="import-none">没有餐厅被导入</p>
       {/if}
