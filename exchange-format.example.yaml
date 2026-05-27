@@ -1,0 +1,64 @@
+# Restaurant Journal — Exchange Format
+#
+# This file documents the YAML format used by the export/import feature.
+# It is a valid importable file; remove or replace the example entries to use it.
+#
+# Top-level fields
+# ─────────────────
+# version      (integer, required) Format version. Currently always 1.
+# exported_at  (ISO 8601 string)   Timestamp set automatically on export; ignored on import.
+# restaurants  (list, required)    List of restaurant entries.
+
+version: 1
+exported_at: "2026-05-27T12:00:00Z"
+
+restaurants:
+
+  # ── Minimal entry (only required fields) ──────────────────────────────────
+  - name: "Pizza Roma"           # (string, required) Restaurant name
+    dine_type: [take]          # (list, required)  Combinations of: dine | take | delivery
+    env_rating: 0                # (integer 0–3)      Environment/atmosphere. 0 = unrated
+    svc_rating: 0                # (integer 0–3)      Service. 0 = unrated
+    is_fav: false                # (boolean)          Favourite flag
+
+  # ── Full entry (all optional fields included) ─────────────────────────────
+  - name: "Sakura"
+    city: "Paris"                # (string, optional) City
+    cuisine: "日式"               # (string, optional) Cuisine type
+    dine_type: [dine]
+    env_rating: 3
+    svc_rating: 2
+    is_fav: true
+    dine_note: "Great ambiance"  # (string, optional) Free-form visit note
+
+    dishes:                      # (list, optional)   Dishes ordered
+      - name: "Salmon Sashimi"   # (string, required) Dish name
+        dtype: main              # (string, required) main | dessert | drink
+        rating: 4                # (integer -1–4)     Dish rating. 0 = unrated, -1 = 避雷 💣
+        price: "18"              # (string, optional) Price as text (currency-agnostic)
+        note: "Very fresh"       # (string, optional) Free-form dish note
+
+      - name: "Matcha Cake"
+        dtype: dessert
+        rating: 3
+        # price and note are optional and can be omitted
+
+# ── Field reference ───────────────────────────────────────────────────────────
+#
+# Restaurant
+#   name        string    required
+#   city        string    optional
+#   cuisine     string    optional
+#   dine_type   list      required   dine | take | delivery    default: [dine]
+#   env_rating  0–3 int   required   0 = unrated              default: 0
+#   svc_rating  0–3 int   required   0 = unrated              default: 0
+#   is_fav      bool      required                            default: false
+#   dine_note   string    optional
+#   dishes      list      optional
+#
+# Dish
+#   name        string    required
+#   dtype       enum      required   main | dessert | drink    default: main
+#   rating      -1–4 int   required   0 = unrated, -1 = 避雷 💣  default: 0
+#   price       string    optional   stored as text (e.g. "12.50")
+#   note        string    optional

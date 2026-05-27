@@ -6,7 +6,7 @@ create table restaurants (
   name        text not null,
   city        text,
   cuisine     text,
-  dine_type   text not null default 'dine' check (dine_type in ('dine', 'take', 'delivery')),
+  dine_type   text[] not null default '{}',
   env_rating  smallint not null default 0 check (env_rating between 0 and 3),
   svc_rating  smallint not null default 0 check (svc_rating between 0 and 3),
   dine_note   text,
@@ -18,8 +18,8 @@ create table dishes (
   restaurant_id  bigint not null references restaurants (id) on delete cascade,
   name           text not null,
   price          text,
-  rating         smallint not null default 0 check (rating between 0 and 4),
-  dtype          text not null default 'main' check (dtype in ('main', 'dessert')),
+  rating         smallint not null default 0 check (rating between -1 and 4),
+  dtype          text not null default 'main' check (dtype in ('main', 'dessert', 'drink')),
   note           text
 );
 

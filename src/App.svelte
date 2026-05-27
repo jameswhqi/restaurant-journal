@@ -6,6 +6,7 @@
   import LoginPage from "./lib/LoginPage.svelte";
   import RestaurantCard from "./lib/RestaurantCard.svelte";
   import RestaurantModal from "./lib/RestaurantModal.svelte";
+  import { downloadYaml, parseYaml } from "./lib/importExport";
 
   // ── Auth state ───────────────────────────────────────────────────────────
   let session = $state<Session | null>(null);
@@ -119,6 +120,89 @@
     if (err) error = err.message;
     else restaurants = restaurants.filter((r) => r.id !== id);
   }
+
+  // ── Export ────────────────────────────────────────────────────────────────
+  function handleExport() {
+    downloadYaml(restaurants);
+  }
+
+  // ── Import ────────────────────────────────────────────────────────────────
+  let importing = $state(false);
+  let importErrors = $state<string[]>([]);
+  let importCount = $state(0);
+  let importDone = $state(false);
+
+  function triggerImport() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".yaml,.yml";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const text = await file.text();
+      const { restaurants: parsed, errors } = parseYaml(text);
+      importErrors = errors;
+      if (parsed.length === 0) {
+        importDone = true;
+        importCount = 0;
+        return;
+      }
+      importing = true;
+      importDone = false;
+      importCount = 0;
+      let insertErrors: string[] = [...errors];
+      for (const r of parsed) {
+        const { data: rest, error: restErr } = await supabase
+          .from("restaurants")
+          .insert({
+            name: r.name,
+            city: r.city || null,
+            cuisine: r.cuisine || null,
+            dine_type: r.dine_type,
+            env_rating: r.env_rating,
+            svc_rating: r.svc_rating,
+            is_fav: r.is_fav,
+            dine_note: r.dine_note || null,
+          })
+          .select()
+          .single();
+        if (restErr) {
+          insertErrors = [...insertErrors, `"${r.name}": ${restErr.message}`];
+          continue;
+        }
+        if (r.dishes.length > 0) {
+          const { error: dishErr } = await supabase.from("dishes").insert(
+            r.dishes.map((d) => ({
+              restaurant_id: rest.id,
+              name: d.name,
+              dtype: d.dtype,
+              rating: d.rating,
+              price: d.price || null,
+              note: d.note || null,
+            })),
+          );
+          if (dishErr) {
+            insertErrors = [
+              ...insertErrors,
+              `"${r.name}" dishes: ${dishErr.message}`,
+            ];
+          }
+        }
+        importCount += 1;
+      }
+      importErrors = insertErrors;
+      importing = false;
+      importDone = true;
+      await loadRestaurants();
+    };
+    input.click();
+  }
+
+  function dismissImport() {
+    importDone = false;
+    importErrors = [];
+    importCount = 0;
+  }
 </script>
 
 {#if authLoading}
@@ -131,6 +215,14 @@
       <h1>美食日记</h1>
       <div class="header-right">
         <button class="add-btn" onclick={openAddModal}>+ 添加餐厅</button>
+        <button
+          class="tool-btn"
+          onclick={handleExport}
+          disabled={loading || restaurants.length === 0}>导出</button
+        >
+        <button class="tool-btn" onclick={triggerImport} disabled={importing}
+          >{importing ? "导入中…" : "导入"}</button
+        >
         <button class="signout-btn" onclick={signOut}>退出</button>
       </div>
     </div>
@@ -198,6 +290,30 @@
   />
 {/if}
 
+{#if importDone}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div role="presentation" class="overlay" onclick={dismissImport}>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="import-result" onclick={(e) => e.stopPropagation()}>
+      <div class="import-result-title">导入完成</div>
+      {#if importCount > 0}
+        <p class="import-ok">成功导入 {importCount} 家餐厅</p>
+      {:else}
+        <p class="import-none">没有餐厅被导入</p>
+      {/if}
+      {#if importErrors.length > 0}
+        <div class="import-errors">
+          <div class="import-errors-title">警告 / 错误</div>
+          {#each importErrors as e}
+            <div class="import-error-row">{e}</div>
+          {/each}
+        </div>
+      {/if}
+      <button class="add-btn" onclick={dismissImport}>关闭</button>
+    </div>
+  </div>
+{/if}
+
 <style>
   .app {
     padding: 16px;
@@ -237,6 +353,68 @@
     font-size: 13px;
     cursor: pointer;
     color: #888;
+  }
+  .tool-btn {
+    background: none;
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #444;
+  }
+  .tool-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .import-result {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    min-width: 300px;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .import-result-title {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .import-ok {
+    color: #27ae60;
+    font-size: 14px;
+    margin: 0;
+  }
+  .import-none {
+    color: #888;
+    font-size: 14px;
+    margin: 0;
+  }
+  .import-errors {
+    background: #fdecea;
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .import-errors-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #c0392b;
+    margin-bottom: 6px;
+  }
+  .import-error-row {
+    font-size: 12px;
+    color: #c0392b;
+    line-height: 1.6;
   }
   .auth-loading {
     text-align: center;

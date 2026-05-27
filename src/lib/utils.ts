@@ -24,6 +24,10 @@ export const dineLabel: Record<DineType, string> = {
   delivery: "Delivery",
 };
 
+export function dineLabels(types: DineType[]): string {
+  return types.map((t) => dineLabel[t] ?? t).join(" & ");
+}
+
 export const CUISINES = [
   "日式",
   "中式",
@@ -37,7 +41,12 @@ export const CUISINES = [
   "其他",
 ];
 
-export function ratingEmoji(n: number, dtype: "main" | "dessert"): string {
+export function ratingEmoji(
+  n: number,
+  dtype: "main" | "dessert" | "drink",
+): string {
+  if (n === -1) return "💣";
   if (!n) return "—";
-  return (dtype === "dessert" ? "🍮" : "🥢").repeat(n);
+  const emoji = dtype === "dessert" ? "🍮" : dtype === "drink" ? "🍻" : "🥢";
+  return emoji.repeat(n);
 }

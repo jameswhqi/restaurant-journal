@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Restaurant, DineType } from "./database.types";
-  import { ratingEmoji, dineLabel } from "./utils";
+  import { ratingEmoji, dineLabels } from "./utils";
 
   let {
     restaurant: r,
@@ -36,7 +36,12 @@
           <span class="dish-name">{d.name}</span>
           <span class="dish-right">
             {#if d.price}<span class="dish-price">€{d.price}</span>{/if}
-            <span>{ratingEmoji(d.rating, d.dtype as "main" | "dessert")}</span>
+            <span
+              >{ratingEmoji(
+                d.rating,
+                d.dtype as "main" | "dessert" | "drink",
+              )}</span
+            >
           </span>
           {#if d.note}<div class="dish-note">{d.note}</div>{/if}
         </div>
@@ -45,7 +50,11 @@
   {/if}
 
   <div class="card-footer">
-    <span class="label">{dineLabel[(r.dine_type ?? "dine") as DineType]}</span>
+    <span class="label"
+      >{dineLabels(
+        (r.dine_type?.length ? r.dine_type : ["dine"]) as DineType[],
+      )}</span
+    >
     {#if r.dine_note}<span class="dine-note">{r.dine_note}</span>{/if}
     <div class="card-actions">
       <button class="action-btn edit-btn" onclick={onEdit}>编辑</button>

@@ -58,7 +58,7 @@ export type Database = {
           created_at: string;
           cuisine: string | null;
           dine_note: string | null;
-          dine_type: string;
+          dine_type: string[];
           env_rating: number;
           id: number;
           is_fav: boolean;
@@ -70,7 +70,7 @@ export type Database = {
           created_at?: string;
           cuisine?: string | null;
           dine_note?: string | null;
-          dine_type?: string;
+          dine_type?: string[];
           env_rating?: number;
           id?: never;
           is_fav?: boolean;
@@ -82,7 +82,7 @@ export type Database = {
           created_at?: string;
           cuisine?: string | null;
           dine_note?: string | null;
-          dine_type?: string;
+          dine_type?: string[];
           env_rating?: number;
           id?: never;
           is_fav?: boolean;

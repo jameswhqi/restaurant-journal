@@ -26,7 +26,7 @@
   let fName = $state(r?.name ?? "");
   let fCity = $state(r?.city ?? "");
   let fCuisine = $state(r?.cuisine ?? "");
-  let fDineType = $state<DineType>((r?.dine_type as DineType) ?? "dine");
+  let fDineType = $state<DineType[]>(r ? (r.dine_type as DineType[]) : []);
   let fEnvRating = $state(r?.env_rating ?? 0);
   let fSvcRating = $state(r?.svc_rating ?? 0);
   let fDineNote = $state(r?.dine_note ?? "");
@@ -37,7 +37,7 @@
           name: d.name,
           price: d.price ?? "",
           rating: d.rating ?? 0,
-          dtype: (d.dtype ?? "main") as "main" | "dessert",
+          dtype: (d.dtype ?? "main") as "main" | "dessert" | "drink",
           note: d.note ?? "",
         }))
       : [],
@@ -193,8 +193,14 @@
           {#each ["dine", "take", "delivery"] as DineType[] as t}
             <button
               class="seg-btn"
-              class:sel={fDineType === t}
-              onclick={() => (fDineType = t)}>{dineLabel[t]}</button
+              class:sel={fDineType.includes(t)}
+              onclick={() => {
+                if (fDineType.includes(t)) {
+                  fDineType = fDineType.filter((x) => x !== t);
+                } else {
+                  fDineType = [...fDineType, t];
+                }
+              }}>{dineLabel[t]}</button
             >
           {/each}
         </div>
@@ -263,17 +269,29 @@
             class:sel={dish.dtype === "dessert"}
             onclick={() => (dish.dtype = "dessert")}>🍮 甜品</button
           >
+          <button
+            class="dtype-btn"
+            class:sel={dish.dtype === "drink"}
+            onclick={() => (dish.dtype = "drink")}>🍻 饮品</button
+          >
         </div>
         <div class="picker">
-          {#each [0, 1, 2, 3, 4] as v}
+          {#each [-1, 0, 1, 2, 3, 4] as v}
             <button
               class="pick-btn"
               class:sel={dish.rating === v}
               onclick={() => (dish.rating = v)}
             >
-              {v === 0
-                ? "—"
-                : (dish.dtype === "dessert" ? "🍮" : "🥢").repeat(v)}
+              {v === -1
+                ? "💣"
+                : v === 0
+                  ? "—"
+                  : (dish.dtype === "dessert"
+                      ? "🍮"
+                      : dish.dtype === "drink"
+                        ? "🍻"
+                        : "🥢"
+                    ).repeat(v)}
             </button>
           {/each}
         </div>
