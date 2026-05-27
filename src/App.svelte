@@ -35,6 +35,8 @@
   let activeCity = $state("all");
   let showModal = $state(false);
   let editingRestaurant = $state<Restaurant | undefined>(undefined);
+  let batchMode = $state(false);
+  let selectedIds = $state(new Set<number>());
 
   // ── Derived ──────────────────────────────────────────────────────────────
   const cities = $derived([
@@ -119,6 +121,49 @@
       .eq("id", id);
     if (err) error = err.message;
     else restaurants = restaurants.filter((r) => r.id !== id);
+  }
+
+  // ── Batch delete ──────────────────────────────────────────────────────────
+  function toggleBatchMode() {
+    batchMode = !batchMode;
+    selectedIds = new Set();
+  }
+
+  function toggleSelect(id: number) {
+    const s = new Set(selectedIds);
+    if (s.has(id)) s.delete(id);
+    else s.add(id);
+    selectedIds = s;
+  }
+
+  async function batchDelete() {
+    const n = selectedIds.size;
+    if (n === 0) return;
+    if (!confirm(`确定删除选中的 ${n} 家餐厅吗？`)) return;
+    const ids = [...selectedIds];
+    const { error: err } = await supabase
+      .from("restaurants")
+      .delete()
+      .in("id", ids);
+    if (err) {
+      error = err.message;
+    } else {
+      restaurants = restaurants.filter((r) => !ids.includes(r.id));
+      batchMode = false;
+      selectedIds = new Set();
+    }
+  }
+
+  function selectAllFiltered() {
+    const s = new Set(selectedIds);
+    for (const r of filtered) s.add(r.id);
+    selectedIds = s;
+  }
+
+  function deselectAllFiltered() {
+    const s = new Set(selectedIds);
+    for (const r of filtered) s.delete(r.id);
+    selectedIds = s;
   }
 
   // ── Export ────────────────────────────────────────────────────────────────
@@ -214,18 +259,38 @@
     <div class="header">
       <h1>美食日记</h1>
       <div class="header-right">
-        <button class="add-btn" onclick={openAddModal}>+ 添加餐厅</button>
-        <button
-          class="tool-btn"
-          onclick={handleExport}
-          disabled={loading || restaurants.length === 0}>导出</button
-        >
-        <button class="tool-btn" onclick={triggerImport} disabled={importing}
-          >{importing ? "导入中…" : "导入"}</button
-        >
-        <button class="signout-btn" onclick={signOut}>退出</button>
+        {#if batchMode}
+          <button
+            class="delete-batch-btn"
+            onclick={batchDelete}
+            disabled={selectedIds.size === 0}>删除 ({selectedIds.size})</button
+          >
+          <button class="tool-btn" onclick={toggleBatchMode}>取消</button>
+        {:else}
+          <button class="add-btn" onclick={openAddModal}>+ 添加餐厅</button>
+          <button class="tool-btn" onclick={toggleBatchMode}>选择</button>
+          <button
+            class="tool-btn"
+            onclick={handleExport}
+            disabled={loading || restaurants.length === 0}>导出</button
+          >
+          <button class="tool-btn" onclick={triggerImport} disabled={importing}
+            >{importing ? "导入中…" : "导入"}</button
+          >
+          <button class="signout-btn" onclick={signOut}>退出</button>
+        {/if}
       </div>
     </div>
+
+    {#if batchMode}
+      <div class="batch-toolbar">
+        <button class="batch-sel-btn" onclick={selectAllFiltered}>全选</button>
+        <button class="batch-sel-btn" onclick={deselectAllFiltered}
+          >取消全选</button
+        >
+        <span class="batch-count">{selectedIds.size} 已选</span>
+      </div>
+    {/if}
 
     <input
       class="search"
@@ -271,6 +336,9 @@
         {#each filtered as r (r.id)}
           <RestaurantCard
             restaurant={r}
+            {batchMode}
+            selected={selectedIds.has(r.id)}
+            onToggleSelect={() => toggleSelect(r.id)}
             onEdit={() => openEditModal(r)}
             onDelete={() => deleteRestaurant(r.id)}
           />
@@ -344,6 +412,19 @@
     padding: 8px 16px;
     font-size: 13px;
     cursor: pointer;
+  }
+  .delete-batch-btn {
+    background: #c0392b;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .delete-batch-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
   }
   .signout-btn {
     background: none;
@@ -470,5 +551,28 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 12px;
+  }
+  .batch-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .batch-sel-btn {
+    background: none;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    color: #444;
+  }
+  .batch-sel-btn:hover {
+    background: #f5f5f5;
+  }
+  .batch-count {
+    font-size: 12px;
+    color: #888;
+    margin-left: 4px;
   }
 </style>

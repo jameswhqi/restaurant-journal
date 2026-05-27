@@ -4,16 +4,37 @@
 
   let {
     restaurant: r,
+    batchMode = false,
+    selected = false,
+    onToggleSelect,
     onEdit,
     onDelete,
   }: {
     restaurant: Restaurant;
+    batchMode?: boolean;
+    selected?: boolean;
+    onToggleSelect?: () => void;
     onEdit: () => void;
     onDelete: () => void;
   } = $props();
 </script>
 
-<div class="card" class:fav={r.is_fav}>
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<div
+  class="card"
+  class:fav={r.is_fav}
+  class:selectable={batchMode}
+  class:selected
+  role={batchMode ? "checkbox" : undefined}
+  aria-checked={batchMode ? selected : undefined}
+  tabindex={batchMode ? 0 : undefined}
+  onclick={batchMode ? onToggleSelect : undefined}
+  onkeydown={batchMode
+    ? (e) => {
+        if (e.key === " " || e.key === "Enter") onToggleSelect?.();
+      }
+    : undefined}
+>
   <div class="card-header">
     <div>
       <div class="rest-name">{r.is_fav ? "❤️ " : ""}{r.name}</div>
@@ -27,6 +48,15 @@
       {#if r.svc_rating}<span>服务 {ratingEmoji(r.svc_rating, "main")}</span
         >{/if}
     </div>
+  </div>
+
+  <div class="card-meta">
+    <span class="label"
+      >{dineLabels(
+        (r.dine_type?.length ? r.dine_type : ["dine"]) as DineType[],
+      )}</span
+    >
+    {#if r.dine_note}<span class="dine-note">{r.dine_note}</span>{/if}
   </div>
 
   {#if r.dishes?.length}
@@ -50,15 +80,15 @@
   {/if}
 
   <div class="card-footer">
-    <span class="label"
-      >{dineLabels(
-        (r.dine_type?.length ? r.dine_type : ["dine"]) as DineType[],
-      )}</span
-    >
-    {#if r.dine_note}<span class="dine-note">{r.dine_note}</span>{/if}
     <div class="card-actions">
-      <button class="action-btn edit-btn" onclick={onEdit}>编辑</button>
-      <button class="action-btn delete-btn" onclick={onDelete}>删除</button>
+      {#if batchMode}
+        <div class="check-circle" class:checked={selected}>
+          {#if selected}✓{/if}
+        </div>
+      {:else}
+        <button class="action-btn edit-btn" onclick={onEdit}>编辑</button>
+        <button class="action-btn delete-btn" onclick={onDelete}>删除</button>
+      {/if}
     </div>
   </div>
 </div>
@@ -70,7 +100,14 @@
     border-radius: 12px;
     overflow: hidden;
   }
-  .card.fav {
+  .card.selectable {
+    cursor: pointer;
+  }
+  .card.selected {
+    border-color: #c0392b;
+    box-shadow: 0 0 0 1px #c0392b;
+  }
+  .card.fav:not(.selectable) {
     border: 1.5px solid #c0392b;
   }
   .card-header {
@@ -99,6 +136,8 @@
   }
   .dishes {
     padding: 6px 14px 10px;
+    max-height: 250px;
+    overflow-y: auto;
   }
   .dish {
     padding: 6px 0;
@@ -131,23 +170,27 @@
     color: #aaa;
     width: 100%;
   }
+  .card-meta {
+    padding: 6px 14px;
+    font-size: 12px;
+    color: #888;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
   .card-footer {
     padding: 7px 14px;
     font-size: 12px;
     color: #888;
     border-top: 1px solid #f0f0f0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
   }
   .label {
     color: #bbb;
   }
   .dine-note {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    word-break: break-word;
   }
   .card-actions {
     margin-left: auto;
@@ -175,5 +218,21 @@
   }
   .delete-btn:hover {
     background: #fdecea;
+  }
+  .check-circle {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .check-circle.checked {
+    background: #c0392b;
+    border-color: #c0392b;
   }
 </style>
