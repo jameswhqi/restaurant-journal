@@ -41,13 +41,17 @@
   let activeCuisine = $state("all");
 
   // ── Derived ──────────────────────────────────────────────────────────────
-  const cities = $derived([
-    ...new Set(restaurants.map((r) => r.city).filter(Boolean) as string[]),
-  ]);
+  const cities = $derived(
+    [
+      ...new Set(restaurants.map((r) => r.city).filter(Boolean) as string[]),
+    ].sort(compareNames),
+  );
 
-  const cuisines = $derived([
-    ...new Set(restaurants.map((r) => r.cuisine).filter(Boolean) as string[]),
-  ]);
+  const cuisines = $derived(
+    [
+      ...new Set(restaurants.map((r) => r.cuisine).filter(Boolean) as string[]),
+    ].sort(compareNames),
+  );
 
   const filtered = $derived(
     restaurants
