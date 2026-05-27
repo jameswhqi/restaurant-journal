@@ -48,20 +48,17 @@
     <Command.Root>
       <Command.Input bind:value={search} placeholder="搜索…" />
       <Command.List>
-        <Command.Empty>
-          {#if showCreate}
-            <button
-              type="button"
-              class="w-full px-2 py-1.5 text-sm text-left hover:bg-accent"
-              onclick={() => select(search.trim())}
-            >
-              新增「{search.trim()}」
-            </button>
-          {:else}
-            无匹配结果
-          {/if}
-        </Command.Empty>
+        <Command.Empty>无匹配结果</Command.Empty>
         <Command.Group>
+          {#if showCreate}
+            <Command.Item
+              value={search.trim()}
+              onSelect={() => select(search.trim())}
+            >
+              <span class="text-muted-foreground mr-2">+</span>
+              新增「{search.trim()}」
+            </Command.Item>
+          {/if}
           {#each options as opt}
             <Command.Item value={opt} onSelect={() => select(opt)}>
               <Check
