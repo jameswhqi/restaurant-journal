@@ -41,6 +41,19 @@ export function compareNames(a: string, b: string): number {
   return _pinyinCollator.compare(a, b);
 }
 
+const _dtypeOrder: Record<string, number> = { main: 0, dessert: 1, drink: 2 };
+
+export function compareDishes(
+  a: { name: string; dtype: string; rating: number },
+  b: { name: string; dtype: string; rating: number },
+): number {
+  const dtypeDiff = (_dtypeOrder[a.dtype] ?? 9) - (_dtypeOrder[b.dtype] ?? 9);
+  if (dtypeDiff !== 0) return dtypeDiff;
+  const ratingDiff = b.rating - a.rating;
+  if (ratingDiff !== 0) return ratingDiff;
+  return compareNames(a.name, b.name);
+}
+
 export const CUISINES = [
   "日式",
   "中式",
