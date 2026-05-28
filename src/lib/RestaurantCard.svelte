@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Restaurant, DineType } from "./database.types";
-  import { ratingEmoji, dineLabels, compareDishes } from "./utils";
+  import { ratingEmoji, dineLabels, compareDishes, getCityFlag } from "./utils";
 
   let {
     restaurant: r,
@@ -39,7 +39,12 @@
     <div>
       <div class="rest-name">{r.is_fav ? "❤️ " : ""}{r.name}</div>
       <div class="rest-sub">
-        {[r.city, r.cuisine].filter(Boolean).join(" · ")}
+        {[
+          getCityFlag(r.city) ? `${getCityFlag(r.city)} ${r.city}` : r.city,
+          r.cuisine,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
       </div>
     </div>
     <div class="ratings">

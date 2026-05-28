@@ -7,7 +7,7 @@
   import RestaurantCard from "./lib/RestaurantCard.svelte";
   import RestaurantModal from "./lib/RestaurantModal.svelte";
   import { downloadYaml, parseYaml } from "./lib/importExport";
-  import { compareNames } from "./lib/utils";
+  import { compareNames, compareCities, getCityFlag } from "./lib/utils";
 
   // ── Auth state ───────────────────────────────────────────────────────────
   let session = $state<Session | null>(null);
@@ -34,6 +34,7 @@
   let error = $state<string | undefined>(undefined);
   let searchQuery = $state("");
   let activeCity = $state("all");
+  let showFavOnly = $state(false);
   let showModal = $state(false);
   let editingRestaurant = $state<Restaurant | undefined>(undefined);
   let batchMode = $state(false);
@@ -44,7 +45,7 @@
   const cities = $derived(
     [
       ...new Set(restaurants.map((r) => r.city).filter(Boolean) as string[]),
-    ].sort(compareNames),
+    ].sort(compareCities),
   );
 
   const cuisines = $derived(
@@ -56,13 +57,8 @@
   const filtered = $derived(
     restaurants
       .filter((r) => {
-        if (activeCity === "fav" && !r.is_fav) return false;
-        if (
-          activeCity !== "all" &&
-          activeCity !== "fav" &&
-          r.city !== activeCity
-        )
-          return false;
+        if (showFavOnly && !r.is_fav) return false;
+        if (activeCity !== "all" && r.city !== activeCity) return false;
         if (activeCuisine !== "all" && r.cuisine !== activeCuisine)
           return false;
         if (searchQuery) {
@@ -356,20 +352,26 @@
     <div class="chips">
       <button
         class="chip"
-        class:active={activeCity === "all"}
-        onclick={() => (activeCity = "all")}>全部</button
+        class:active={showFavOnly}
+        onclick={() => (showFavOnly = !showFavOnly)}>❤️ 心水</button
       >
+    </div>
+
+    <div class="chips">
       <button
         class="chip"
-        class:active={activeCity === "fav"}
-        onclick={() => (activeCity = "fav")}>❤️ 心水</button
+        class:active={activeCity === "all"}
+        onclick={() => (activeCity = "all")}>全部</button
       >
       {#each cities as city}
         <button
           class="chip"
           class:active={activeCity === city}
-          onclick={() => (activeCity = city)}>{city}</button
+          onclick={() => (activeCity = activeCity === city ? "all" : city)}
         >
+          {getCityFlag(city)}
+          {city}
+        </button>
       {/each}
     </div>
     {#if cuisines.length > 0}
@@ -383,10 +385,16 @@
           <button
             class="chip"
             class:active={activeCuisine === cuisine}
-            onclick={() => (activeCuisine = cuisine)}>{cuisine}</button
+            onclick={() =>
+              (activeCuisine = activeCuisine === cuisine ? "all" : cuisine)}
+            >{cuisine}</button
           >
         {/each}
       </div>
+    {/if}
+
+    {#if !loading && restaurants.length > 0}
+      <div class="count">{filtered.length} 家餐厅</div>
     {/if}
 
     {#if error}
@@ -591,8 +599,8 @@
   }
   .chips {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
-    overflow-x: auto;
     padding-bottom: 4px;
     margin-bottom: 16px;
   }
@@ -610,6 +618,11 @@
     background: #1a1a1a;
     color: #fff;
     border-color: #1a1a1a;
+  }
+  .count {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 12px;
   }
   .empty {
     text-align: center;

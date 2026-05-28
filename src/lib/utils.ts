@@ -28,6 +28,77 @@ export function dineLabels(types: DineType[]): string {
   return types.map((t) => dineLabel[t] ?? t).join(" & ");
 }
 
+// Country data: flag and cities
+const COUNTRIES: Record<string, { flag: string; cities: string[] }> = {
+  BE: {
+    flag: "🇧🇪",
+    cities: ["Antwerp", "Lanaken"],
+  },
+  DE: {
+    flag: "🇩🇪",
+    cities: ["Aachen", "Düsseldorf"],
+  },
+  ES: {
+    flag: "🇪🇸",
+    cities: ["Barcelona"],
+  },
+  FR: {
+    flag: "🇫🇷",
+    cities: ["Paris", "Versailles"],
+  },
+  NL: {
+    flag: "🇳🇱",
+    cities: [
+      "Amsterdam",
+      "Arnhem",
+      "Berlicum",
+      "Breda",
+      "Den Haag",
+      "Delft",
+      "Eindhoven",
+      "Groningen",
+      "Helmond",
+      "Leeuwarden",
+      "Maastricht",
+      "Nijmegen",
+      "Rotterdam",
+      "'s-Hertogenbosch",
+      "Thorn",
+      "Tilburg",
+      "Utrecht",
+      "Valkenburg",
+    ],
+  },
+};
+
+// Build reverse mapping: city -> country code
+const CITY_TO_COUNTRY_CODE: Record<string, string> = {};
+for (const [code, { cities }] of Object.entries(COUNTRIES)) {
+  for (const city of cities) {
+    CITY_TO_COUNTRY_CODE[city] = code;
+  }
+}
+
+export function getCityFlag(city: string | null | undefined): string {
+  if (!city) return "";
+  const countryCode = CITY_TO_COUNTRY_CODE[city];
+  return countryCode ? (COUNTRIES[countryCode]?.flag ?? "") : "";
+}
+
+export function getCityCountryCode(city: string | null | undefined): string {
+  if (!city) return "ZZ"; // Sort unknown cities last
+  return CITY_TO_COUNTRY_CODE[city] ?? "ZZ";
+}
+
+export function compareCities(a: string, b: string): number {
+  const countryA = getCityCountryCode(a);
+  const countryB = getCityCountryCode(b);
+  if (countryA !== countryB) {
+    return countryA.localeCompare(countryB);
+  }
+  return compareNames(a, b);
+}
+
 // Sort Latin names before Chinese names; Chinese names sorted by pinyin.
 const _pinyinCollator = new Intl.Collator("zh-u-co-pinyin", {
   sensitivity: "base",
