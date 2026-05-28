@@ -40,11 +40,12 @@
           dtype: (d.dtype ?? "main") as "main" | "dessert" | "drink",
           note: d.note ?? "",
         }))
-      : [],
+      : [{ name: "", price: "", rating: 0, dtype: "main" as const, note: "" }],
   );
 
   let saving = $state(false);
   let saveError = $state<string | undefined>(undefined);
+  let validationError = $state<string | undefined>(undefined);
 
   function addDish() {
     fDishes = [
@@ -58,7 +59,67 @@
   }
 
   async function saveRecord() {
-    if (!fName.trim()) return;
+    // Validate all required fields
+    validationError = undefined;
+
+    if (!fCity.trim()) {
+      validationError = "城市为必填项";
+      return;
+    }
+    if (!fName.trim()) {
+      validationError = "餐厅名称为必填项";
+      return;
+    }
+    if (!fCuisine.trim()) {
+      validationError = "菜系为必填项";
+      return;
+    }
+    if (fDineType.length === 0) {
+      validationError = "请至少选择一种用餐方式";
+      return;
+    }
+    if (fEnvRating === 0) {
+      validationError = "环境评分为必填项";
+      return;
+    }
+    if (fSvcRating === 0) {
+      validationError = "服务评分为必填项";
+      return;
+    }
+    if (!fDineNote.trim()) {
+      validationError = "整体印象为必填项";
+      return;
+    }
+
+    // Validate dishes - all present dishes must be complete
+    if (fDishes.length === 0) {
+      validationError = "请至少添加一道菜品";
+      return;
+    }
+
+    const validDishes = [];
+    for (let i = 0; i < fDishes.length; i++) {
+      const d = fDishes[i];
+      const hasName = d.name.trim() !== "";
+      const hasRating = d.rating !== 0;
+      const hasNote = d.note.trim() !== "";
+
+      // Name, rating, and note are required; price is optional
+      if (!hasName) {
+        validationError = `第 ${i + 1} 道菜品缺少菜名`;
+        return;
+      }
+      if (!hasRating) {
+        validationError = `第 ${i + 1} 道菜品缺少评分`;
+        return;
+      }
+      if (!hasNote) {
+        validationError = `第 ${i + 1} 道菜品缺少备注`;
+        return;
+      }
+      validDishes.push(d);
+    }
+
     saving = true;
     saveError = undefined;
 
@@ -96,7 +157,6 @@
         return;
       }
 
-      const validDishes = fDishes.filter((d) => d.name.trim());
       if (validDishes.length > 0) {
         const { error: dishErr } = await supabase.from("dishes").insert(
           validDishes.map((d) => ({
@@ -137,7 +197,6 @@
         return;
       }
 
-      const validDishes = fDishes.filter((d) => d.name.trim());
       if (validDishes.length > 0) {
         const { error: dishErr } = await supabase.from("dishes").insert(
           validDishes.map((d) => ({
@@ -264,7 +323,7 @@
             />
             <input
               bind:value={dish.price}
-              placeholder="价格"
+              placeholder="价格（可选）"
               class="dish-price"
             />
           </div>
@@ -305,17 +364,16 @@
               </button>
             {/each}
           </div>
-          <input
-            bind:value={dish.note}
-            placeholder="备注（可选）"
-            class="note-input"
-          />
+          <input bind:value={dish.note} placeholder="备注" class="note-input" />
         </div>
         <button class="remove-dish" onclick={() => removeDish(i)}>✕</button>
       </div>
     {/each}
     <button class="add-dish-btn" onclick={addDish}>+ 添加菜品</button>
 
+    {#if validationError}
+      <p class="validation-error">{validationError}</p>
+    {/if}
     {#if saveError}
       <p class="save-error">{saveError}</p>
     {/if}
@@ -497,6 +555,14 @@
     color: #c0392b;
     font-size: 13px;
     background: #fdecea;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-top: 12px;
+  }
+  .validation-error {
+    color: #d68910;
+    font-size: 13px;
+    background: #fef5e7;
     padding: 8px 12px;
     border-radius: 8px;
     margin-top: 12px;
