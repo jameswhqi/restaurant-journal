@@ -32,7 +32,7 @@ export function dineLabels(types: DineType[]): string {
 const COUNTRIES: Record<string, { flag: string; cities: string[] }> = {
   BE: {
     flag: "🇧🇪",
-    cities: ["Antwerp", "Lanaken"],
+    cities: ["Antwerp", "Ghent", "Lanaken"],
   },
   DE: {
     flag: "🇩🇪",
