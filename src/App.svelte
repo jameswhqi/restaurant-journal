@@ -187,6 +187,37 @@
     selectedIds = s;
   }
 
+  // ── Rename cuisine ────────────────────────────────────────────────────────
+  async function renameCuisine(oldName: string) {
+    const newName = prompt(`重命名菜系「${oldName}」为:`, oldName);
+    if (!newName || newName.trim() === "" || newName === oldName) return;
+
+    // Find all restaurants with this cuisine
+    const affectedRestaurants = restaurants.filter(
+      (r) => r.cuisine === oldName,
+    );
+    if (affectedRestaurants.length === 0) return;
+
+    // Update all restaurants with the new cuisine name
+    const { error: err } = await supabase
+      .from("restaurants")
+      .update({ cuisine: newName.trim() })
+      .eq("cuisine", oldName);
+
+    if (err) {
+      error = err.message;
+    } else {
+      // Update local state
+      restaurants = restaurants.map((r) =>
+        r.cuisine === oldName ? { ...r, cuisine: newName.trim() } : r,
+      );
+      // Reset filter if the renamed cuisine was active
+      if (activeCuisine === oldName) {
+        activeCuisine = newName.trim();
+      }
+    }
+  }
+
   // ── Export ────────────────────────────────────────────────────────────────
   function handleExport() {
     downloadYaml(restaurants);
@@ -387,7 +418,11 @@
             class:active={activeCuisine === cuisine}
             onclick={() =>
               (activeCuisine = activeCuisine === cuisine ? "all" : cuisine)}
-            >{cuisine}</button
+            oncontextmenu={(e) => {
+              e.preventDefault();
+              renameCuisine(cuisine);
+            }}
+            title="右键重命名">{cuisine}</button
           >
         {/each}
       </div>
