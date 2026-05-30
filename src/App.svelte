@@ -356,6 +356,23 @@
     <div class="sticky-top">
       <div class="header">
         <h1>美食日记</h1>
+        <div class="header-search-wrap">
+          <div class="search-wrap">
+            <input
+              class="search"
+              type="text"
+              placeholder="搜索餐厅或菜品…"
+              bind:value={searchQuery}
+            />
+            {#if searchQuery}
+              <button
+                class="search-clear"
+                onclick={() => (searchQuery = "")}
+                aria-label="清除">×</button
+              >
+            {/if}
+          </div>
+        </div>
         <div class="header-right">
           {#if batchMode}
             <button class="batch-sel-btn" onclick={selectAllFiltered}
@@ -389,12 +406,21 @@
         </div>
       </div>
 
-      <input
-        class="search"
-        type="text"
-        placeholder="搜索餐厅或菜品…"
-        bind:value={searchQuery}
-      />
+      <div class="search-wrap below-search-wrap">
+        <input
+          class="search"
+          type="text"
+          placeholder="搜索餐厅或菜品…"
+          bind:value={searchQuery}
+        />
+        {#if searchQuery}
+          <button
+            class="search-clear"
+            onclick={() => (searchQuery = "")}
+            aria-label="清除">×</button
+          >
+        {/if}
+      </div>
     </div>
 
     <div class="chips">
@@ -532,15 +558,38 @@
     z-index: 10;
     background: #f5f5f5;
     margin: -16px -16px 0;
-    padding: 16px 16px 8px;
+    padding: 16px 16px 12px;
   }
   .header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 14px;
+  }
+  .header-search-wrap {
+    display: none;
+    flex: 1;
+    margin-left: 8px;
+  }
+  .header-search-wrap .search-wrap {
+    margin-bottom: 0;
+  }
+  .below-search-wrap {
+    display: block;
+    margin-bottom: 0;
+  }
+  @media (min-width: 768px) {
+    .header {
+      margin-bottom: 0;
+    }
+    .header-search-wrap {
+      display: block;
+    }
+    .below-search-wrap {
+      display: none;
+    }
   }
   .header h1 {
     font-size: 19px;
@@ -651,13 +700,40 @@
     font-family: system-ui, sans-serif;
     color: #999;
   }
+  .search-wrap {
+    position: relative;
+    margin-bottom: 0;
+  }
   .search {
     width: 100%;
     padding: 8px 12px;
     border: 1px solid #d0d0d0;
     border-radius: 8px;
-    font-size: 15px;
-    margin-bottom: 10px;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+  .search-clear {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #e0e0e0;
+    border: none;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-size: 16px;
+    color: #666;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0 2px 0;
+    line-height: 1;
+  }
+  .search-clear:hover {
+    background: #ccc;
+    color: #333;
   }
   .chips {
     display: flex;

@@ -117,6 +117,74 @@ export function compareNames(a: string, b: string): number {
 
 const _dtypeOrder: Record<string, number> = { main: 0, dessert: 1, drink: 2 };
 
+export type Currency =
+  | "EUR"
+  | "CNY"
+  | "GBP"
+  | "HKD"
+  | "ISK"
+  | "JPY"
+  | "NOK"
+  | "SEK"
+  | "USD";
+
+export const CURRENCIES: Currency[] = [
+  "EUR",
+  "CNY",
+  "GBP",
+  "HKD",
+  "ISK",
+  "JPY",
+  "NOK",
+  "SEK",
+  "USD",
+];
+
+/** Approximate rates: 1 EUR → X units of currency (hard-coded, May 2026) */
+export const TO_EUR: Record<Currency, number> = {
+  EUR: 1,
+  CNY: 7.9,
+  GBP: 0.87,
+  HKD: 9.13,
+  ISK: 143.2,
+  JPY: 185.54,
+  NOK: 10.78,
+  SEK: 10.78,
+  USD: 1.17,
+};
+
+export const CURRENCY_SYMBOL: Record<Currency, string> = {
+  EUR: "€",
+  CNY: "¥",
+  GBP: "£",
+  HKD: "HK$",
+  ISK: "kr",
+  JPY: "¥",
+  NOK: "kr",
+  SEK: "kr",
+  USD: "$",
+};
+
+/** Convert a price string in the given currency to a formatted EUR string, e.g. "€12.34" */
+export function toEur(
+  price: string | null | undefined,
+  currency: Currency,
+): string {
+  if (!price) return "";
+  const val = parseFloat(price);
+  if (isNaN(val)) return "";
+  const eur = val / TO_EUR[currency];
+  return `€${eur.toFixed(2)}`;
+}
+
+/** Format a price for display on the card: always shown in EUR, rounded to cents */
+export function displayPrice(
+  price: string | null | undefined,
+  currency: Currency,
+): string {
+  return toEur(price, currency);
+}
+
 export function compareDishes(
   a: { name: string; dtype: string; rating: number },
   b: { name: string; dtype: string; rating: number },

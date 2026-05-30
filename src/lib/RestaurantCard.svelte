@@ -1,6 +1,13 @@
 <script lang="ts">
   import type { Restaurant, DineType } from "./database.types";
-  import { ratingEmoji, dineLabels, compareDishes, getCityFlag } from "./utils";
+  import {
+    ratingEmoji,
+    dineLabels,
+    compareDishes,
+    getCityFlag,
+    displayPrice,
+    type Currency,
+  } from "./utils";
 
   let {
     restaurant: r,
@@ -86,7 +93,12 @@
         <div class="dish">
           <span class="dish-name">{d.name}</span>
           <span class="dish-right">
-            {#if d.price}<span class="dish-price">€{d.price}</span>{/if}
+            {#if d.price}<span class="dish-price"
+                >{displayPrice(
+                  d.price,
+                  (r.currency ?? "EUR") as Currency,
+                )}</span
+              >{/if}
             <span
               >{ratingEmoji(
                 d.rating,

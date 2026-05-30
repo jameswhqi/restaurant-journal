@@ -57,6 +57,7 @@ export type Database = {
           city: string | null;
           created_at: string;
           cuisine: string | null;
+          currency: string;
           dine_note: string | null;
           dine_type: string[];
           env_rating: number;
@@ -70,6 +71,7 @@ export type Database = {
           city?: string | null;
           created_at?: string;
           cuisine?: string | null;
+          currency?: string;
           dine_note?: string | null;
           dine_type?: string[];
           env_rating?: number;
@@ -83,6 +85,7 @@ export type Database = {
           city?: string | null;
           created_at?: string;
           cuisine?: string | null;
+          currency?: string;
           dine_note?: string | null;
           dine_type?: string[];
           env_rating?: number;

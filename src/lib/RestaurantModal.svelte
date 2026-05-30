@@ -2,7 +2,14 @@
   import { untrack } from "svelte";
   import { supabase } from "./supabase";
   import type { Restaurant, DineType } from "./database.types";
-  import { dineLabel, ratingEmoji } from "./utils";
+  import {
+    dineLabel,
+    ratingEmoji,
+    CURRENCIES,
+    CURRENCY_SYMBOL,
+    toEur,
+    type Currency,
+  } from "./utils";
   import Combobox from "./Combobox.svelte";
 
   let {
@@ -31,6 +38,7 @@
   let fSvcRating = $state(r?.svc_rating ?? 0);
   let fDineNote = $state(r?.dine_note ?? "");
   let fIsFav = $state(r?.is_fav ?? false);
+  let fCurrency = $state<Currency>((r?.currency as Currency) ?? "EUR");
   let fDishes = $state(
     r?.dishes?.length
       ? r.dishes.map((d) => ({
@@ -136,6 +144,7 @@
           svc_rating: fSvcRating,
           dine_note: fDineNote.trim() || null,
           is_fav: fIsFav,
+          currency: fCurrency,
         })
         .eq("id", r.id);
 
@@ -187,6 +196,7 @@
           svc_rating: fSvcRating,
           dine_note: fDineNote.trim() || null,
           is_fav: fIsFav,
+          currency: fCurrency,
           visit_count: 1,
         })
         .select()
@@ -247,7 +257,7 @@
         菜系
         <Combobox bind:value={fCuisine} options={cuisines} />
       </label>
-      <label>
+      <div class="pseudo-label">
         用餐方式
         <div class="seg">
           {#each ["dine", "take", "delivery"] as DineType[] as t}
@@ -264,8 +274,8 @@
             >
           {/each}
         </div>
-      </label>
-      <label>
+      </div>
+      <div class="pseudo-label">
         环境评分
         <div class="picker">
           {#each [0, 1, 2, 3] as v}
@@ -277,8 +287,8 @@
             >
           {/each}
         </div>
-      </label>
-      <label>
+      </div>
+      <div class="pseudo-label">
         服务评分
         <div class="picker">
           {#each [0, 1, 2, 3] as v}
@@ -290,26 +300,38 @@
             >
           {/each}
         </div>
-      </label>
+      </div>
       <label class="full">
         整体印象
         <input bind:value={fDineNote} placeholder="如：装修很好，服务一般" />
       </label>
-      <label class="full">
+      <div class="pseudo-label">
         心水餐厅
         <div class="seg">
-          <button
-            class="seg-btn"
-            class:sel={fIsFav}
-            onclick={() => (fIsFav = true)}>是 ❤️</button
-          >
           <button
             class="seg-btn"
             class:sel={!fIsFav}
             onclick={() => (fIsFav = false)}>不选</button
           >
+          <button
+            class="seg-btn"
+            class:sel={fIsFav}
+            onclick={() => (fIsFav = true)}>是 ❤️</button
+          >
         </div>
-      </label>
+      </div>
+      <div class="pseudo-label">
+        货币
+        <div class="currency-seg">
+          {#each CURRENCIES as c}
+            <button
+              class="pick-btn currency-btn"
+              class:sel={fCurrency === c}
+              onclick={() => (fCurrency = c)}>{c}</button
+            >
+          {/each}
+        </div>
+      </div>
     </div>
 
     <div class="section-label">菜品</div>
@@ -322,11 +344,21 @@
               placeholder="菜名"
               class="dish-name"
             />
-            <input
-              bind:value={dish.price}
-              placeholder="价格（可选）"
-              class="dish-price"
-            />
+            <div class="price-wrap">
+              <div class="price-input-row">
+                <span class="price-symbol">{CURRENCY_SYMBOL[fCurrency]}</span>
+                <input
+                  bind:value={dish.price}
+                  placeholder="价格（可选）"
+                  class="dish-price"
+                />
+              </div>
+              {#if fCurrency !== "EUR"}
+                <span class="price-conv" class:price-conv-hidden={!dish.price}
+                  >≈ {toEur(dish.price, fCurrency)}</span
+                >
+              {/if}
+            </div>
           </div>
           <div class="dish-types">
             <button
@@ -498,14 +530,72 @@
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    align-items: flex-start;
   }
   .dish-name-price .dish-name {
     flex: 2;
     min-width: 120px;
   }
   .dish-name-price .dish-price {
+    width: 100%;
+  }
+  .price-wrap {
     flex: 1;
     min-width: 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .price-input-row {
+    display: flex;
+    align-items: center;
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .price-symbol {
+    padding: 0 6px 0 10px;
+    font-size: 13px;
+    color: #888;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .price-input-row .dish-price {
+    border: none;
+    border-radius: 0;
+    padding-left: 0;
+    flex: 1;
+    min-width: 0;
+  }
+  .price-input-row .dish-price:focus {
+    outline: none;
+    box-shadow: none;
+  }
+  .price-conv {
+    font-size: 11px;
+    color: #888;
+    padding-left: 2px;
+    line-height: 1.2;
+  }
+  .price-conv-hidden {
+    visibility: hidden;
+  }
+  .pseudo-label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: #666;
+  }
+  .currency-seg {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .currency-btn {
+    font-size: 11px;
+    padding: 5px 8px;
   }
   .dish-fields input {
     padding: 8px 10px;
