@@ -218,6 +218,22 @@
     }
   }
 
+  // ── Visit counter ─────────────────────────────────────────────────────────
+  async function updateVisitCount(id: number, delta: number) {
+    const r = restaurants.find((r) => r.id === id);
+    if (!r) return;
+    const newCount = Math.max(0, (r.visit_count ?? 1) + delta);
+    const { error: err } = await supabase
+      .from("restaurants")
+      .update({ visit_count: newCount })
+      .eq("id", id);
+    if (err) error = err.message;
+    else
+      restaurants = restaurants.map((rest) =>
+        rest.id === id ? { ...rest, visit_count: newCount } : rest,
+      );
+  }
+
   // ── Export ────────────────────────────────────────────────────────────────
   function handleExport() {
     downloadYaml(restaurants);
@@ -337,48 +353,49 @@
   <LoginPage onSignIn={signIn} />
 {:else}
   <div class="app">
-    <div class="header">
-      <h1>美食日记</h1>
-      <div class="header-right">
-        {#if batchMode}
-          <button
-            class="delete-batch-btn"
-            onclick={batchDelete}
-            disabled={selectedIds.size === 0}>删除 ({selectedIds.size})</button
-          >
-          <button class="tool-btn" onclick={toggleBatchMode}>取消</button>
-        {:else}
-          <button class="add-btn" onclick={openAddModal}>+ 添加餐厅</button>
-          <button class="tool-btn" onclick={toggleBatchMode}>选择</button>
-          <button
-            class="tool-btn"
-            onclick={handleExport}
-            disabled={loading || restaurants.length === 0}>导出</button
-          >
-          <button class="tool-btn" onclick={triggerImport} disabled={importing}
-            >{importing ? "导入中…" : "导入"}</button
-          >
-          <button class="signout-btn" onclick={signOut}>退出</button>
-        {/if}
+    <div class="sticky-top">
+      <div class="header">
+        <h1>美食日记</h1>
+        <div class="header-right">
+          {#if batchMode}
+            <button class="batch-sel-btn" onclick={selectAllFiltered}
+              >全选</button
+            >
+            <button class="batch-sel-btn" onclick={deselectAllFiltered}
+              >取消全选</button
+            >
+            <button
+              class="delete-batch-btn"
+              onclick={batchDelete}
+              disabled={selectedIds.size === 0}
+              >删除 ({selectedIds.size})</button
+            >
+            <button class="tool-btn" onclick={toggleBatchMode}>取消</button>
+          {:else}
+            <button class="add-btn" onclick={openAddModal}>+ 添加餐厅</button>
+            <button class="tool-btn" onclick={toggleBatchMode}>选择</button>
+            <button
+              class="tool-btn"
+              onclick={handleExport}
+              disabled={loading || restaurants.length === 0}>导出</button
+            >
+            <button
+              class="tool-btn"
+              onclick={triggerImport}
+              disabled={importing}>{importing ? "导入中…" : "导入"}</button
+            >
+            <button class="signout-btn" onclick={signOut}>退出</button>
+          {/if}
+        </div>
       </div>
+
+      <input
+        class="search"
+        type="text"
+        placeholder="搜索餐厅或菜品…"
+        bind:value={searchQuery}
+      />
     </div>
-
-    {#if batchMode}
-      <div class="batch-toolbar">
-        <button class="batch-sel-btn" onclick={selectAllFiltered}>全选</button>
-        <button class="batch-sel-btn" onclick={deselectAllFiltered}
-          >取消全选</button
-        >
-        <span class="batch-count">{selectedIds.size} 已选</span>
-      </div>
-    {/if}
-
-    <input
-      class="search"
-      type="text"
-      placeholder="搜索餐厅或菜品…"
-      bind:value={searchQuery}
-    />
 
     <div class="chips">
       <button
@@ -454,6 +471,8 @@
             onToggleSelect={() => toggleSelect(r.id)}
             onEdit={() => openEditModal(r)}
             onDelete={() => deleteRestaurant(r.id)}
+            onIncrementVisit={() => updateVisitCount(r.id, 1)}
+            onDecrementVisit={() => updateVisitCount(r.id, -1)}
           />
         {/each}
       </div>
@@ -506,6 +525,14 @@
     max-width: 1200px;
     margin: 0 auto;
     font-family: system-ui, sans-serif;
+  }
+  .sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f5f5f5;
+    margin: -16px -16px 0;
+    padding: 16px 16px 8px;
   }
   .header {
     display: flex;
@@ -683,12 +710,6 @@
       grid-template-columns: repeat(3, 1fr);
     }
   }
-  .batch-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
-  }
   .batch-sel-btn {
     background: none;
     border: 1px solid #d0d0d0;
@@ -700,10 +721,5 @@
   }
   .batch-sel-btn:hover {
     background: #f5f5f5;
-  }
-  .batch-count {
-    font-size: 13px;
-    color: #888;
-    margin-left: 4px;
   }
 </style>

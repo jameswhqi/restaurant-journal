@@ -64,6 +64,7 @@ export type Database = {
           is_fav: boolean;
           name: string;
           svc_rating: number;
+          visit_count: number;
         };
         Insert: {
           city?: string | null;
@@ -76,6 +77,7 @@ export type Database = {
           is_fav?: boolean;
           name: string;
           svc_rating?: number;
+          visit_count?: number;
         };
         Update: {
           city?: string | null;
@@ -88,6 +90,7 @@ export type Database = {
           is_fav?: boolean;
           name?: string;
           svc_rating?: number;
+          visit_count?: number;
         };
         Relationships: [];
       };

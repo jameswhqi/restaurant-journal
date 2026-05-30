@@ -9,6 +9,8 @@
     onToggleSelect,
     onEdit,
     onDelete,
+    onIncrementVisit,
+    onDecrementVisit,
   }: {
     restaurant: Restaurant;
     batchMode?: boolean;
@@ -16,7 +18,21 @@
     onToggleSelect?: () => void;
     onEdit: () => void;
     onDelete: () => void;
+    onIncrementVisit?: () => void;
+    onDecrementVisit?: () => void;
   } = $props();
+
+  let animating = $state(false);
+
+  function handleIncrement() {
+    onIncrementVisit?.();
+    animating = true;
+    setTimeout(() => (animating = false), 700);
+  }
+
+  function handleDecrement() {
+    onDecrementVisit?.();
+  }
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -85,6 +101,23 @@
   {/if}
 
   <div class="card-footer">
+    <div class="visit-counter">
+      <span class="counter-label">去过</span>
+      <button
+        class="count-btn"
+        onclick={handleDecrement}
+        disabled={batchMode || (r.visit_count ?? 1) <= 1}
+        aria-label="减少次数">−</button
+      >
+      <span class="visit-num" class:pop={animating}>{r.visit_count ?? 1}</span>
+      <button
+        class="count-btn"
+        onclick={handleIncrement}
+        disabled={batchMode}
+        aria-label="增加次数">+</button
+      >
+      <span class="counter-label">次</span>
+    </div>
     <div class="card-actions">
       {#if batchMode}
         <div class="check-circle" class:checked={selected}>
@@ -104,6 +137,8 @@
     border: 1px solid #e0e0e0;
     border-radius: 12px;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
   .card.selectable {
     cursor: pointer;
@@ -189,6 +224,85 @@
     font-size: 13px;
     color: #888;
     border-top: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: auto;
+  }
+  .visit-counter {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .counter-label {
+    font-size: 12px;
+    color: #999;
+  }
+  .count-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1px solid #d0d0d0;
+    background: #f5f5f5;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: #555;
+    flex-shrink: 0;
+  }
+  .count-btn:hover:not(:disabled) {
+    background: #e8e8e8;
+  }
+  .count-btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+  .visit-num {
+    min-width: 22px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #444;
+    display: inline-block;
+    margin-inline: -2px;
+  }
+  @keyframes visit-pop {
+    0% {
+      transform: scale(1);
+      color: #444;
+    }
+    20% {
+      transform: scale(1.8);
+      color: #e67e22;
+    }
+    40% {
+      transform: scale(2.1) rotate(-8deg);
+      color: #e74c3c;
+    }
+    55% {
+      transform: scale(1.9) rotate(6deg);
+      color: #9b59b6;
+    }
+    70% {
+      transform: scale(1.5);
+      color: #2980b9;
+    }
+    85% {
+      transform: scale(1.2);
+      color: #27ae60;
+    }
+    100% {
+      transform: scale(1);
+      color: #444;
+    }
+  }
+  .visit-num.pop {
+    animation: visit-pop 0.7s ease-in-out;
   }
   .label {
     color: #999;
@@ -225,14 +339,14 @@
     background: #fdecea;
   }
   .check-circle {
-    width: 22px;
-    height: 22px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     border: 1.5px solid #ccc;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 16px;
     color: #fff;
     flex-shrink: 0;
   }

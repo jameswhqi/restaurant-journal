@@ -10,7 +10,8 @@ create table restaurants (
   env_rating  smallint not null default 0 check (env_rating between 0 and 3),
   svc_rating  smallint not null default 0 check (svc_rating between 0 and 3),
   dine_note   text,
-  is_fav      boolean not null default false
+  is_fav      boolean not null default false,
+  visit_count smallint not null default 1
 );
 
 create table dishes (

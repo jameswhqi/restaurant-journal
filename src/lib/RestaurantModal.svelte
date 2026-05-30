@@ -187,6 +187,7 @@
           svc_rating: fSvcRating,
           dine_note: fDineNote.trim() || null,
           is_fav: fIsFav,
+          visit_count: 1,
         })
         .select()
         .single();
