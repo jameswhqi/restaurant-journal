@@ -32,7 +32,16 @@ export function dineLabels(types: DineType[]): string {
 const COUNTRIES: Record<string, { flag: string; cities: string[] }> = {
   BE: {
     flag: "🇧🇪",
-    cities: ["Antwerp", "Ghent", "Lanaken"],
+    cities: [
+      "Antwerp",
+      "Brussels",
+      "Ghent",
+      "Ixelles",
+      "Lanaken",
+      "Leuven",
+      "Liege",
+      "Turnhout",
+    ],
   },
   DE: {
     flag: "🇩🇪",
@@ -44,7 +53,26 @@ const COUNTRIES: Record<string, { flag: string; cities: string[] }> = {
   },
   FR: {
     flag: "🇫🇷",
-    cities: ["Paris", "Versailles"],
+    cities: ["Avignon", "Les Angles", "Lyon", "Orange", "Paris", "Versailles"],
+  },
+  IS: {
+    flag: "🇮🇸",
+    cities: [
+      "Akureyri",
+      "Höfn",
+      "Njarðvík",
+      "Ólafsvík",
+      "Öræfi",
+      "Reykjavík",
+      "Reykolt",
+      "Seyðisfjörður",
+      "Skútustaðahreppur",
+      "Snaefellsbaer",
+    ],
+  },
+  LU: {
+    flag: "🇱🇺",
+    cities: ["Luxembourg"],
   },
   NL: {
     flag: "🇳🇱",
@@ -58,9 +86,12 @@ const COUNTRIES: Record<string, { flag: string; cities: string[] }> = {
       "Eindhoven",
       "Groningen",
       "Helmond",
+      "Heusden",
       "Leeuwarden",
+      "Leiden",
       "Maastricht",
       "Nijmegen",
+      "Roermond",
       "Rotterdam",
       "'s-Hertogenbosch",
       "Thorn",
@@ -68,6 +99,14 @@ const COUNTRIES: Record<string, { flag: string; cities: string[] }> = {
       "Utrecht",
       "Valkenburg",
     ],
+  },
+  NO: {
+    flag: "🇳🇴",
+    cities: ["Narvik", "Oslo"],
+  },
+  SE: {
+    flag: "🇸🇪",
+    cities: ["Abisko"],
   },
 };
 

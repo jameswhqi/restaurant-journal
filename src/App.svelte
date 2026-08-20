@@ -41,6 +41,34 @@
   let selectedIds = $state(new Set<number>());
   let activeCuisine = $state("all");
 
+  // ── Lazy rendering ───────────────────────────────────────────────────────
+  const PAGE_SIZE = 30;
+  let visibleCount = $state(PAGE_SIZE);
+  let sentinel = $state<HTMLDivElement | undefined>(undefined);
+
+  // Reset how many cards are shown whenever the filters change.
+  $effect(() => {
+    searchQuery;
+    activeCity;
+    activeCuisine;
+    showFavOnly;
+    visibleCount = PAGE_SIZE;
+  });
+
+  $effect(() => {
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          visibleCount += PAGE_SIZE;
+        }
+      },
+      { rootMargin: "600px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  });
+
   // ── Derived ──────────────────────────────────────────────────────────────
   const cities = $derived(
     [
@@ -78,6 +106,8 @@
       })
       .sort((a, b) => compareNames(a.name, b.name)),
   );
+
+  const displayed = $derived(filtered.slice(0, visibleCount));
 
   // ── Data loading ─────────────────────────────────────────────────────────
   async function loadRestaurants() {
@@ -489,7 +519,7 @@
       </p>
     {:else}
       <div class="grid">
-        {#each filtered as r (r.id)}
+        {#each displayed as r (r.id)}
           <RestaurantCard
             restaurant={r}
             {batchMode}
@@ -502,6 +532,9 @@
           />
         {/each}
       </div>
+      {#if displayed.length < filtered.length}
+        <div bind:this={sentinel} class="sentinel"></div>
+      {/if}
     {/if}
   </div>
 {/if}
@@ -797,5 +830,8 @@
   }
   .batch-sel-btn:hover {
     background: #f5f5f5;
+  }
+  .sentinel {
+    height: 1px;
   }
 </style>
