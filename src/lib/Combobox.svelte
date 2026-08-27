@@ -43,7 +43,7 @@
 <Popover.Root bind:open>
   <Popover.Trigger
     class={cn(
-      "flex h-9 w-full items-center justify-between rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-xs ring-offset-background",
+      "flex h-9 w-full items-center justify-between rounded-lg border border-input bg-transparent px-3 py-2 text-base shadow-xs ring-offset-background",
       "placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring",
       "disabled:cursor-not-allowed disabled:opacity-50",
     )}
@@ -62,7 +62,7 @@
         <div class="px-2 py-1.5 border-b">
           <button
             type="button"
-            class="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            class="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
             onclick={copyToClipboard}
           >
             <Copy class="h-3 w-3" />

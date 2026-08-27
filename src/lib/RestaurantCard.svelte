@@ -170,11 +170,11 @@
     gap: 8px;
   }
   .rest-name {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 500;
   }
   .rest-sub {
-    font-size: 13px;
+    font-size: 15px;
     color: #888;
     margin-top: 2px;
   }
@@ -183,7 +183,7 @@
     flex-direction: column;
     align-items: flex-end;
     gap: 3px;
-    font-size: 12px;
+    font-size: 14px;
     color: #888;
   }
   .dishes {
@@ -204,27 +204,27 @@
     border-bottom: none;
   }
   .dish-name {
-    font-size: 14px;
+    font-size: 16px;
     flex: 1;
   }
   .dish-right {
     display: flex;
     gap: 8px;
-    font-size: 13px;
+    font-size: 15px;
     color: #888;
   }
   .dish-price {
-    font-size: 13px;
+    font-size: 15px;
     color: #888;
   }
   .dish-note {
-    font-size: 13px;
+    font-size: 15px;
     color: #888;
     width: 100%;
   }
   .card-meta {
     padding: 6px 14px;
-    font-size: 13px;
+    font-size: 15px;
     color: #888;
     border-bottom: 1px solid #f0f0f0;
     display: flex;
@@ -233,7 +233,7 @@
   }
   .card-footer {
     padding: 7px 14px;
-    font-size: 13px;
+    font-size: 15px;
     color: #888;
     border-top: 1px solid #f0f0f0;
     display: flex;
@@ -248,7 +248,7 @@
     gap: 4px;
   }
   .counter-label {
-    font-size: 12px;
+    font-size: 14px;
     color: #999;
   }
   .count-btn {
@@ -257,7 +257,7 @@
     border-radius: 50%;
     border: 1px solid #d0d0d0;
     background: #f5f5f5;
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1;
     cursor: pointer;
     display: flex;
@@ -277,7 +277,7 @@
   .visit-num {
     min-width: 22px;
     text-align: center;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 600;
     color: #444;
     display: inline-block;
@@ -332,7 +332,7 @@
   .action-btn {
     padding: 3px 8px;
     border-radius: 6px;
-    font-size: 12px;
+    font-size: 14px;
     cursor: pointer;
     border: 1px solid #e0e0e0;
     background: #fff;
@@ -358,7 +358,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 18px;
     color: #fff;
     flex-shrink: 0;
   }

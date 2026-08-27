@@ -129,6 +129,10 @@ export function getCityCountryCode(city: string | null | undefined): string {
   return CITY_TO_COUNTRY_CODE[city] ?? "ZZ";
 }
 
+export function getCountryFlag(countryCode: string): string {
+  return COUNTRIES[countryCode]?.flag ?? "";
+}
+
 export function compareCities(a: string, b: string): number {
   const countryA = getCityCountryCode(a);
   const countryB = getCityCountryCode(b);
@@ -158,9 +162,7 @@ const _dtypeOrder: Record<string, number> = { main: 0, dessert: 1, drink: 2 };
 
 export type Currency =
   | "EUR"
-  | "CNY"
   | "GBP"
-  | "HKD"
   | "ISK"
   | "JPY"
   | "NOK"
@@ -169,9 +171,7 @@ export type Currency =
 
 export const CURRENCIES: Currency[] = [
   "EUR",
-  "CNY",
   "GBP",
-  "HKD",
   "ISK",
   "JPY",
   "NOK",
@@ -182,9 +182,7 @@ export const CURRENCIES: Currency[] = [
 /** Approximate rates: 1 EUR → X units of currency (hard-coded, May 2026) */
 export const TO_EUR: Record<Currency, number> = {
   EUR: 1,
-  CNY: 7.9,
   GBP: 0.87,
-  HKD: 9.13,
   ISK: 143.2,
   JPY: 185.54,
   NOK: 10.78,
@@ -194,9 +192,7 @@ export const TO_EUR: Record<Currency, number> = {
 
 export const CURRENCY_SYMBOL: Record<Currency, string> = {
   EUR: "€",
-  CNY: "¥",
   GBP: "£",
-  HKD: "HK$",
   ISK: "kr",
   JPY: "¥",
   NOK: "kr",

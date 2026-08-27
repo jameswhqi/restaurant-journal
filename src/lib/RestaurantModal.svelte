@@ -360,42 +360,44 @@
               {/if}
             </div>
           </div>
-          <div class="dish-types">
-            <button
-              class="dtype-btn"
-              class:sel={dish.dtype === "main"}
-              onclick={() => (dish.dtype = "main")}>🥢 主菜</button
-            >
-            <button
-              class="dtype-btn"
-              class:sel={dish.dtype === "dessert"}
-              onclick={() => (dish.dtype = "dessert")}>🍮 甜品</button
-            >
-            <button
-              class="dtype-btn"
-              class:sel={dish.dtype === "drink"}
-              onclick={() => (dish.dtype = "drink")}>🍻 饮品</button
-            >
-          </div>
-          <div class="picker">
-            {#each [-1, 0, 1, 2, 3, 4] as v}
+          <div class="dtype-rating-row">
+            <div class="dish-types">
               <button
-                class="pick-btn"
-                class:sel={dish.rating === v}
-                onclick={() => (dish.rating = v)}
+                class="dtype-btn"
+                class:sel={dish.dtype === "main"}
+                onclick={() => (dish.dtype = "main")}>🥢 主菜</button
               >
-                {v === -1
-                  ? "💣"
-                  : v === 0
-                    ? "—"
-                    : (dish.dtype === "dessert"
-                        ? "🍮"
-                        : dish.dtype === "drink"
-                          ? "🍻"
-                          : "🥢"
-                      ).repeat(v)}
-              </button>
-            {/each}
+              <button
+                class="dtype-btn"
+                class:sel={dish.dtype === "dessert"}
+                onclick={() => (dish.dtype = "dessert")}>🍮 甜品</button
+              >
+              <button
+                class="dtype-btn"
+                class:sel={dish.dtype === "drink"}
+                onclick={() => (dish.dtype = "drink")}>🍻 饮品</button
+              >
+            </div>
+            <div class="picker">
+              {#each [-1, 0, 1, 2, 3, 4] as v}
+                <button
+                  class="pick-btn"
+                  class:sel={dish.rating === v}
+                  onclick={() => (dish.rating = v)}
+                >
+                  {v === -1
+                    ? "💣"
+                    : v === 0
+                      ? "—"
+                      : (dish.dtype === "dessert"
+                          ? "🍮"
+                          : dish.dtype === "drink"
+                            ? "🍻"
+                            : "🥢"
+                        ).repeat(v)}
+                </button>
+              {/each}
+            </div>
           </div>
           <input bind:value={dish.note} placeholder="备注" class="note-input" />
         </div>
@@ -436,10 +438,10 @@
     background: #fff;
     border-radius: 14px;
     padding: 24px;
-    width: min(640px, calc(100vw - 32px));
+    width: min(840px, calc(100vw - 32px));
   }
   .modal-title {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 500;
     margin-bottom: 18px;
   }
@@ -452,28 +454,33 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    font-size: 12px;
+    font-size: 14px;
     color: #666;
   }
   .form-grid label.full {
     grid-column: 1 / -1;
   }
   .form-grid input {
-    padding: 9px 12px;
+    height: 36px;
+    padding: 0 12px;
     border: 1px solid #d0d0d0;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 16px;
   }
   .seg {
     display: flex;
+    height: 36px;
     border: 1px solid #d0d0d0;
     border-radius: 8px;
     overflow: hidden;
   }
   .seg-btn {
     flex: 1;
-    padding: 9px 4px;
-    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    font-size: 15px;
     cursor: pointer;
     border: none;
     border-right: 1px solid #d0d0d0;
@@ -496,7 +503,7 @@
     padding: 6px 10px;
     border: 1px solid #d0d0d0;
     border-radius: 8px;
-    font-size: 13px;
+    font-size: 15px;
     cursor: pointer;
     background: #fff;
     color: #666;
@@ -507,7 +514,7 @@
     border-color: #1a1a1a;
   }
   .section-label {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 500;
     margin: 20px 0 8px;
   }
@@ -549,6 +556,7 @@
   .price-input-row {
     display: flex;
     align-items: center;
+    height: 36px;
     border: 1px solid #d0d0d0;
     border-radius: 8px;
     overflow: hidden;
@@ -556,12 +564,13 @@
   }
   .price-symbol {
     padding: 0 6px 0 10px;
-    font-size: 13px;
+    font-size: 15px;
     color: #888;
     white-space: nowrap;
     user-select: none;
   }
   .price-input-row .dish-price {
+    height: 100%;
     border: none;
     border-radius: 0;
     padding-left: 0;
@@ -573,7 +582,7 @@
     box-shadow: none;
   }
   .price-conv {
-    font-size: 11px;
+    font-size: 13px;
     color: #888;
     padding-left: 2px;
     line-height: 1.2;
@@ -585,7 +594,7 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    font-size: 12px;
+    font-size: 14px;
     color: #666;
   }
   .currency-seg {
@@ -594,14 +603,22 @@
     gap: 5px;
   }
   .currency-btn {
-    font-size: 11px;
+    font-size: 13px;
     padding: 5px 8px;
   }
   .dish-fields input {
-    padding: 8px 10px;
+    height: 36px;
+    padding: 0 10px;
     border: 1px solid #d0d0d0;
     border-radius: 8px;
-    font-size: 13px;
+    font-size: 16px;
+    background: #fff;
+  }
+  .dtype-rating-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: space-between;
   }
   .dish-types {
     display: flex;
@@ -612,7 +629,7 @@
     padding: 6px 12px;
     border: 1px solid #d0d0d0;
     border-radius: 8px;
-    font-size: 12px;
+    font-size: 14px;
     cursor: pointer;
     background: #fff;
     color: #666;
@@ -625,7 +642,7 @@
   .remove-dish {
     background: none;
     border: none;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
     color: #aaa;
     padding: 8px 4px;
@@ -637,14 +654,14 @@
     border: 1px dashed #d0d0d0;
     border-radius: 8px;
     background: none;
-    font-size: 13px;
+    font-size: 15px;
     color: #888;
     cursor: pointer;
     margin-top: 4px;
   }
   .save-error {
     color: #c0392b;
-    font-size: 13px;
+    font-size: 15px;
     background: #fdecea;
     padding: 8px 12px;
     border-radius: 8px;
@@ -652,7 +669,7 @@
   }
   .validation-error {
     color: #d68910;
-    font-size: 13px;
+    font-size: 15px;
     background: #fef5e7;
     padding: 8px 12px;
     border-radius: 8px;
@@ -670,7 +687,7 @@
     color: #fff;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
     font-weight: 500;
   }
@@ -683,7 +700,7 @@
     background: none;
     border: 1px solid #d0d0d0;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
     color: #666;
   }

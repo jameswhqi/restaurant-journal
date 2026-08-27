@@ -67,7 +67,7 @@
     box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
   }
   .login-box h1 {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 500;
     margin-bottom: 24px;
     text-align: center;
@@ -81,7 +81,7 @@
     padding: 10px 12px;
     border: 1px solid #d0d0d0;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 16px;
   }
   .login-box button {
     padding: 12px;
@@ -89,7 +89,7 @@
     color: #fff;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
     font-weight: 500;
   }
@@ -99,7 +99,7 @@
   }
   .login-error {
     color: #c0392b;
-    font-size: 13px;
+    font-size: 15px;
     background: #fdecea;
     padding: 8px 12px;
     border-radius: 8px;

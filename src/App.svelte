@@ -7,7 +7,14 @@
   import RestaurantCard from "./lib/RestaurantCard.svelte";
   import RestaurantModal from "./lib/RestaurantModal.svelte";
   import { downloadYaml, parseYaml } from "./lib/importExport";
-  import { compareNames, compareCities, getCityFlag } from "./lib/utils";
+  import {
+    compareNames,
+    compareCities,
+    getCityFlag,
+    getCityCountryCode,
+    getCountryFlag,
+  } from "./lib/utils";
+  import * as Select from "./lib/components/ui/select";
 
   // ── Auth state ───────────────────────────────────────────────────────────
   let session = $state<Session | null>(null);
@@ -33,13 +40,14 @@
   let loading = $state(true);
   let error = $state<string | undefined>(undefined);
   let searchQuery = $state("");
+  let activeCountry = $state("all");
   let activeCity = $state("all");
   let showFavOnly = $state(false);
   let showModal = $state(false);
   let editingRestaurant = $state<Restaurant | undefined>(undefined);
   let batchMode = $state(false);
   let selectedIds = $state(new Set<number>());
-  let activeCuisine = $state("all");
+  let activeCuisines = $state(new Set<string>());
 
   // ── Lazy rendering ───────────────────────────────────────────────────────
   const PAGE_SIZE = 30;
@@ -49,10 +57,31 @@
   // Reset how many cards are shown whenever the filters change.
   $effect(() => {
     searchQuery;
+    activeCountry;
     activeCity;
-    activeCuisine;
+    activeCuisines;
     showFavOnly;
     visibleCount = PAGE_SIZE;
+  });
+
+  // Reset the city filter if it no longer belongs to the selected country.
+  $effect(() => {
+    if (
+      activeCountry !== "all" &&
+      activeCity !== "all" &&
+      getCityCountryCode(activeCity) !== activeCountry
+    ) {
+      activeCity = "all";
+    }
+  });
+
+  // Drop selected cuisines that are no longer available for the selected country/city.
+  $effect(() => {
+    const available = new Set(cuisines);
+    const pruned = [...activeCuisines].filter((c) => available.has(c));
+    if (pruned.length !== activeCuisines.size) {
+      activeCuisines = new Set(pruned);
+    }
   });
 
   $effect(() => {
@@ -70,15 +99,38 @@
   });
 
   // ── Derived ──────────────────────────────────────────────────────────────
-  const cities = $derived(
+  const allCities = $derived(
     [
       ...new Set(restaurants.map((r) => r.city).filter(Boolean) as string[]),
     ].sort(compareCities),
   );
 
+  const countries = $derived(
+    [...new Set(allCities.map((c) => getCityCountryCode(c)))].sort(),
+  );
+
+  const cities = $derived(
+    activeCountry === "all"
+      ? allCities
+      : allCities.filter((c) => getCityCountryCode(c) === activeCountry),
+  );
+
   const cuisines = $derived(
     [
-      ...new Set(restaurants.map((r) => r.cuisine).filter(Boolean) as string[]),
+      ...new Set(
+        restaurants
+          .filter((r) => {
+            if (
+              activeCountry !== "all" &&
+              getCityCountryCode(r.city) !== activeCountry
+            )
+              return false;
+            if (activeCity !== "all" && r.city !== activeCity) return false;
+            return true;
+          })
+          .map((r) => r.cuisine)
+          .filter(Boolean) as string[],
+      ),
     ].sort(compareNames),
   );
 
@@ -86,8 +138,13 @@
     restaurants
       .filter((r) => {
         if (showFavOnly && !r.is_fav) return false;
+        if (activeCountry !== "all" && getCityCountryCode(r.city) !== activeCountry)
+          return false;
         if (activeCity !== "all" && r.city !== activeCity) return false;
-        if (activeCuisine !== "all" && r.cuisine !== activeCuisine)
+        if (
+          activeCuisines.size > 0 &&
+          (!r.cuisine || !activeCuisines.has(r.cuisine))
+        )
           return false;
         if (searchQuery) {
           const q = searchQuery.toLowerCase();
@@ -139,10 +196,11 @@
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, s) => {
       session = s;
-      // Only clear data on sign-out; initial load is handled by onMount
       if (event === "SIGNED_OUT") {
         restaurants = [];
         loading = true;
+      } else if (event === "SIGNED_IN") {
+        loadRestaurants();
       }
     });
 
@@ -241,9 +299,12 @@
       restaurants = restaurants.map((r) =>
         r.cuisine === oldName ? { ...r, cuisine: newName.trim() } : r,
       );
-      // Reset filter if the renamed cuisine was active
-      if (activeCuisine === oldName) {
-        activeCuisine = newName.trim();
+      // Keep the filter in sync if the renamed cuisine was active
+      if (activeCuisines.has(oldName)) {
+        const s = new Set(activeCuisines);
+        s.delete(oldName);
+        s.add(newName.trim());
+        activeCuisines = s;
       }
     }
   }
@@ -422,12 +483,12 @@
             <button class="add-btn" onclick={openAddModal}>+ 添加餐厅</button>
             <button class="tool-btn" onclick={toggleBatchMode}>选择</button>
             <button
-              class="tool-btn"
+              class="tool-btn import-export-btn"
               onclick={handleExport}
               disabled={loading || restaurants.length === 0}>导出</button
             >
             <button
-              class="tool-btn"
+              class="tool-btn import-export-btn"
               onclick={triggerImport}
               disabled={importing}>{importing ? "导入中…" : "导入"}</button
             >
@@ -453,44 +514,62 @@
       </div>
     </div>
 
-    <div class="chips">
+    <div class="city-select-wrap">
       <button
         class="chip"
         class:active={showFavOnly}
         onclick={() => (showFavOnly = !showFavOnly)}>❤️ 心水</button
       >
-    </div>
-
-    <div class="chips">
-      <button
-        class="chip"
-        class:active={activeCity === "all"}
-        onclick={() => (activeCity = "all")}>全部</button
-      >
-      {#each cities as city}
-        <button
-          class="chip"
-          class:active={activeCity === city}
-          onclick={() => (activeCity = activeCity === city ? "all" : city)}
-        >
-          {getCityFlag(city)}
-          {city}
-        </button>
-      {/each}
+      <Select.Root type="single" bind:value={activeCountry}>
+        <Select.Trigger class="city-select-trigger country-select-trigger">
+          {activeCountry === "all"
+            ? "所有国家"
+            : `${getCountryFlag(activeCountry)} ${activeCountry}`}
+        </Select.Trigger>
+        <Select.Content>
+          <Select.Item value="all" label="所有国家">所有国家</Select.Item>
+          {#each countries as country}
+            <Select.Item value={country} label={country}>
+              {getCountryFlag(country)}
+              {country}
+            </Select.Item>
+          {/each}
+        </Select.Content>
+      </Select.Root>
+      <Select.Root type="single" bind:value={activeCity}>
+        <Select.Trigger class="city-select-trigger">
+          {activeCity === "all"
+            ? "所有城市"
+            : `${getCityFlag(activeCity)} ${activeCity}`}
+        </Select.Trigger>
+        <Select.Content>
+          <Select.Item value="all" label="所有城市">所有城市</Select.Item>
+          {#each cities as city}
+            <Select.Item value={city} label={city}>
+              {getCityFlag(city)}
+              {city}
+            </Select.Item>
+          {/each}
+        </Select.Content>
+      </Select.Root>
     </div>
     {#if cuisines.length > 0}
       <div class="chips">
         <button
           class="chip"
-          class:active={activeCuisine === "all"}
-          onclick={() => (activeCuisine = "all")}>全部</button
+          class:active={activeCuisines.size === 0}
+          onclick={() => (activeCuisines = new Set())}>全部</button
         >
         {#each cuisines as cuisine}
           <button
             class="chip"
-            class:active={activeCuisine === cuisine}
-            onclick={() =>
-              (activeCuisine = activeCuisine === cuisine ? "all" : cuisine)}
+            class:active={activeCuisines.has(cuisine)}
+            onclick={() => {
+              const s = new Set(activeCuisines);
+              if (s.has(cuisine)) s.delete(cuisine);
+              else s.add(cuisine);
+              activeCuisines = s;
+            }}
             oncontextmenu={(e) => {
               e.preventDefault();
               renameCuisine(cuisine);
@@ -613,6 +692,9 @@
     display: block;
     margin-bottom: 0;
   }
+  .import-export-btn {
+    display: none;
+  }
   @media (min-width: 768px) {
     .header {
       margin-bottom: 0;
@@ -623,9 +705,12 @@
     .below-search-wrap {
       display: none;
     }
+    .import-export-btn {
+      display: inline-block;
+    }
   }
   .header h1 {
-    font-size: 19px;
+    font-size: 21px;
     font-weight: 500;
   }
   .header-right {
@@ -640,7 +725,7 @@
     border: none;
     border-radius: 8px;
     padding: 8px 16px;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
   }
   .delete-batch-btn {
@@ -649,7 +734,7 @@
     border: none;
     border-radius: 8px;
     padding: 8px 16px;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
   }
   .delete-batch-btn:disabled {
@@ -657,20 +742,20 @@
     cursor: default;
   }
   .signout-btn {
-    background: none;
+    background: #fff;
     border: 1px solid #d0d0d0;
     border-radius: 8px;
     padding: 8px 12px;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
     color: #888;
   }
   .tool-btn {
-    background: none;
+    background: #fff;
     border: 1px solid #d0d0d0;
     border-radius: 8px;
     padding: 8px 12px;
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
     color: #444;
   }
@@ -698,17 +783,17 @@
     gap: 12px;
   }
   .import-result-title {
-    font-size: 17px;
+    font-size: 19px;
     font-weight: 600;
   }
   .import-ok {
     color: #27ae60;
-    font-size: 15px;
+    font-size: 17px;
     margin: 0;
   }
   .import-none {
     color: #888;
-    font-size: 15px;
+    font-size: 17px;
     margin: 0;
   }
   .import-errors {
@@ -717,13 +802,13 @@
     padding: 10px 12px;
   }
   .import-errors-title {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 600;
     color: #c0392b;
     margin-bottom: 6px;
   }
   .import-error-row {
-    font-size: 13px;
+    font-size: 15px;
     color: #c0392b;
     line-height: 1.6;
   }
@@ -742,8 +827,9 @@
     padding: 8px 12px;
     border: 1px solid #d0d0d0;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 16px;
     box-sizing: border-box;
+    background: #fff;
   }
   .search-clear {
     position: absolute;
@@ -755,7 +841,7 @@
     border-radius: 50%;
     width: 22px;
     height: 22px;
-    font-size: 16px;
+    font-size: 18px;
     color: #666;
     cursor: pointer;
     display: flex;
@@ -775,10 +861,24 @@
     padding-bottom: 4px;
     margin-bottom: 16px;
   }
+  .city-select-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  :global(.city-select-trigger) {
+    min-width: 120px;
+    background: #fff;
+  }
+  :global(.country-select-trigger) {
+    min-width: 100px;
+  }
   .chip {
     padding: 5px 14px;
     border-radius: 20px;
-    font-size: 13px;
+    font-size: 15px;
     border: 1px solid #d0d0d0;
     background: #fff;
     color: #666;
@@ -791,7 +891,7 @@
     border-color: #1a1a1a;
   }
   .count {
-    font-size: 13px;
+    font-size: 15px;
     color: #888;
     margin-bottom: 12px;
   }
@@ -799,7 +899,7 @@
     text-align: center;
     padding: 56px 20px;
     color: #999;
-    font-size: 15px;
+    font-size: 17px;
   }
   .error {
     color: #c0392b;
@@ -807,7 +907,7 @@
     background: #fdecea;
     border-radius: 8px;
     margin-bottom: 12px;
-    font-size: 14px;
+    font-size: 16px;
   }
   .grid {
     display: grid;
@@ -824,7 +924,7 @@
     border: 1px solid #d0d0d0;
     border-radius: 6px;
     padding: 4px 10px;
-    font-size: 13px;
+    font-size: 15px;
     cursor: pointer;
     color: #444;
   }
