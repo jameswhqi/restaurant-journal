@@ -8,6 +8,7 @@
   import RestaurantModal from "./lib/RestaurantModal.svelte";
   import { downloadYaml, parseYaml } from "./lib/importExport";
   import {
+    DRINK_CUISINES,
     compareNames,
     compareCities,
     getCityFlag,
@@ -48,6 +49,9 @@
   let batchMode = $state(false);
   let selectedIds = $state(new Set<number>());
   let activeCuisines = $state(new Set<string>());
+  // "All restaurants" / "all drinks" chips; both are off while individual cuisines are selected.
+  let showAllRestaurants = $state(true);
+  let showAllDrinks = $state(true);
 
   // ── Lazy rendering ───────────────────────────────────────────────────────
   const PAGE_SIZE = 30;
@@ -60,6 +64,8 @@
     activeCountry;
     activeCity;
     activeCuisines;
+    showAllRestaurants;
+    showAllDrinks;
     showFavOnly;
     visibleCount = PAGE_SIZE;
   });
@@ -134,18 +140,52 @@
     ].sort(compareNames),
   );
 
+  const restaurantCuisines = $derived(
+    cuisines.filter((c) => !DRINK_CUISINES.has(c)),
+  );
+  const drinkCuisines = $derived(cuisines.filter((c) => DRINK_CUISINES.has(c)));
+
+  function toggleCuisine(cuisine: string) {
+    const s = new Set(activeCuisines);
+    if (s.has(cuisine)) s.delete(cuisine);
+    else s.add(cuisine);
+    activeCuisines = s;
+    if (s.size > 0) {
+      showAllRestaurants = false;
+      showAllDrinks = false;
+    }
+  }
+
+  function toggleAll(kind: "restaurants" | "drinks") {
+    // Leaving individual-cuisine mode: only the clicked group is switched on.
+    const wasIndividual = activeCuisines.size > 0;
+    activeCuisines = new Set();
+    if (kind === "restaurants") {
+      showAllRestaurants = wasIndividual ? true : !showAllRestaurants;
+      if (wasIndividual) showAllDrinks = false;
+    } else {
+      showAllDrinks = wasIndividual ? true : !showAllDrinks;
+      if (wasIndividual) showAllRestaurants = false;
+    }
+  }
+
   const filtered = $derived(
     restaurants
       .filter((r) => {
         if (showFavOnly && !r.is_fav) return false;
-        if (activeCountry !== "all" && getCityCountryCode(r.city) !== activeCountry)
-          return false;
-        if (activeCity !== "all" && r.city !== activeCity) return false;
         if (
-          activeCuisines.size > 0 &&
-          (!r.cuisine || !activeCuisines.has(r.cuisine))
+          activeCountry !== "all" &&
+          getCityCountryCode(r.city) !== activeCountry
         )
           return false;
+        if (activeCity !== "all" && r.city !== activeCity) return false;
+        if (activeCuisines.size > 0) {
+          if (!r.cuisine || !activeCuisines.has(r.cuisine)) return false;
+        } else if (r.cuisine && DRINK_CUISINES.has(r.cuisine)) {
+          if (!showAllDrinks) return false;
+        } else if (!showAllRestaurants) {
+          return false;
+        }
         if (searchQuery) {
           const q = searchQuery.toLowerCase();
           const hay = [
@@ -553,23 +593,21 @@
         </Select.Content>
       </Select.Root>
     </div>
-    {#if cuisines.length > 0}
+    {#snippet cuisineChips(
+      allLabel: string,
+      allActive: boolean,
+      onAll: () => void,
+      list: string[],
+    )}
       <div class="chips">
-        <button
-          class="chip"
-          class:active={activeCuisines.size === 0}
-          onclick={() => (activeCuisines = new Set())}>全部</button
+        <button class="chip all" class:active={allActive} onclick={onAll}
+          >{allLabel}</button
         >
-        {#each cuisines as cuisine}
+        {#each list as cuisine}
           <button
             class="chip"
             class:active={activeCuisines.has(cuisine)}
-            onclick={() => {
-              const s = new Set(activeCuisines);
-              if (s.has(cuisine)) s.delete(cuisine);
-              else s.add(cuisine);
-              activeCuisines = s;
-            }}
+            onclick={() => toggleCuisine(cuisine)}
             oncontextmenu={(e) => {
               e.preventDefault();
               renameCuisine(cuisine);
@@ -578,6 +616,22 @@
           >
         {/each}
       </div>
+    {/snippet}
+    {#if restaurantCuisines.length > 0}
+      {@render cuisineChips(
+        "全部餐厅",
+        showAllRestaurants,
+        () => toggleAll("restaurants"),
+        restaurantCuisines,
+      )}
+    {/if}
+    {#if drinkCuisines.length > 0}
+      {@render cuisineChips(
+        "全部饮品",
+        showAllDrinks,
+        () => toggleAll("drinks"),
+        drinkCuisines,
+      )}
     {/if}
 
     {#if !loading && restaurants.length > 0}
@@ -885,10 +939,19 @@
     cursor: pointer;
     white-space: nowrap;
   }
+  .chip.all {
+    background: #f0f0f0;
+    color: #222;
+  }
   .chip.active {
-    background: #1a1a1a;
+    background: #444;
     color: #fff;
-    border-color: #1a1a1a;
+    border-color: #444;
+  }
+  .chip.all.active {
+    background: #222;
+    color: #eee;
+    border-color: #222;
   }
   .count {
     font-size: 15px;

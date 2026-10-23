@@ -30,6 +30,10 @@ export function dineLabels(types: DineType[]): string {
 
 // Country data: flag and cities
 const COUNTRIES: Record<string, { flag: string; cities: string[] }> = {
+  AD: {
+    flag: "🇦🇩",
+    cities: ["Andorra"],
+  },
   BE: {
     flag: "🇧🇪",
     cities: [
@@ -45,15 +49,24 @@ const COUNTRIES: Record<string, { flag: string; cities: string[] }> = {
   },
   DE: {
     flag: "🇩🇪",
-    cities: ["Aachen", "Düsseldorf"],
+    cities: ["Aachen", "Bonn", "Düsseldorf", "Königswinter"],
   },
   ES: {
     flag: "🇪🇸",
-    cities: ["Barcelona"],
+    cities: ["Barcelona", "Lleida"],
   },
   FR: {
     flag: "🇫🇷",
-    cities: ["Avignon", "Les Angles", "Lyon", "Orange", "Paris", "Versailles"],
+    cities: [
+      "Avignon",
+      "Cauterets",
+      "Les Angles",
+      "Lourdes",
+      "Lyon",
+      "Orange",
+      "Paris",
+      "Versailles",
+    ],
   },
   IS: {
     flag: "🇮🇸",
@@ -84,6 +97,7 @@ const COUNTRIES: Record<string, { flag: string; cities: string[] }> = {
       "Den Haag",
       "Delft",
       "Eindhoven",
+      "Giethoorn",
       "Groningen",
       "Helmond",
       "Heusden",
@@ -94,6 +108,7 @@ const COUNTRIES: Record<string, { flag: string; cities: string[] }> = {
       "Roermond",
       "Rotterdam",
       "'s-Hertogenbosch",
+      "Texel",
       "Thorn",
       "Tilburg",
       "Utrecht",
@@ -109,6 +124,9 @@ const COUNTRIES: Record<string, { flag: string; cities: string[] }> = {
     cities: ["Abisko"],
   },
 };
+
+// Cuisines that count as drinks; everything else is a restaurant
+export const DRINK_CUISINES = new Set(["冰", "茶饮", "酒吧", "咖啡"]);
 
 // Build reverse mapping: city -> country code
 const CITY_TO_COUNTRY_CODE: Record<string, string> = {};
